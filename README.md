@@ -4,7 +4,7 @@
 - [Introduction](#Introduction)
 - [Methodology](#Methodology)
 - [Results](#Results)
-- [Future Work](#Future-Work
+- [Future Work](#Future-Work)
 - [Dependencies](#Dependencies)
 - [Team](#Team)
 - [Acknowledgment](#Acknowledgment)
