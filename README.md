@@ -1,13 +1,33 @@
 # Team Project Name
 
-List of participants and affiliations:
-- Participant, Affiliation (Team Leader)
-- Participant, Affiliation
+## Table of Contents
+- [Introduction](#Introduction)
+- [Methodology](#Methodology)
+- [Results](#Results)
+- [Future Work](#Future-Work
+- [Dependencies](#Dependencies)
+- [Team](#Team)
+- [Acknowledgment](#Acknowledgment)
+- [References](#References)
+- [License](#License)
 
-## Project Goals
+## Introduction
+- Project Goals
 
-## Approach
+## Methodology
 
 ## Results
 
 ## Future Work
+
+## Dependencies
+
+## Team
+- Participant, Affiliation 
+
+## Acknowledgment
+
+## References
+
+## License
+Licensed under MIT License - Copyright (c) 2022 NCBI-Codeathons (Refer LICENSE file for more details)
