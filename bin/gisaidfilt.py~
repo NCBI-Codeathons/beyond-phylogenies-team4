@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+import sys
+
+from datetime import date, timedelta
+
+def dateDays(s):
+    """Parse an ISO format date spec YYYY-MM-DD optionally followed by +N or _N,
+where N is a number of days. Returns the date object after adding or subtracting
+the specified days."""
+    if "+" in s:
+        parts = s.split("+")
+        date = date.fromisoformat(parts[0])
+        delta = timedelta(days=int(parts[1]))
+        return date + delta
+    elif "-" in s:
+        parts = s.split("_")
+        date = date.fromisoformat(parts[0])
+        delta = timedelta(days=int(parts[1]))
+        return date - delta
+    else:
+        return date.fromisoformat(s)
+
+class GisaidFilt(object):
+    filename = ""
+    outfile = "/dev/stdout"
+    nameWanted = None
+    nameNotWanted = None
+    fromDate = None
+    toDate = None
+
+    def parseArgs(self, args):
+        prev = ""
+        for a in args:
+            if prev == "-o":
+                self.outfile = a
+                prev = ""
+            elif prev == "-n":
+                self.nameWanted = a
+                prev = ""
+            elif prev == "-N":
+                self.nameNotWanted = a
+                prev = ""
+            elif prev == "-a":
+                self.fromDate = dateDays(a)
+                prev = ""
+            elif prev == "-b":
+                self.toDate = dateDays(a)
+                prev = ""
+            elif a in ["-o", "-n", "-N", "-a", "-b"]:
+                prev = a
+            else:
+                self.filename = a
+        return self.filename
+
+        def usage(self):
+            sys.stdout.write("""gisaidfilt.py - Filter GISAID fasta files
+
+Usage: gisaidfilt.py [options] filename.fa
+
+Options:
+
+  -o O | Write output to file O (default: standard output)
+  -n N | Output sequences whose name contains N
+  -N N | Output sequences whose name does not contain N
+  -a A | Do not output sequences before date A
+  -b B | Do not output sequences after date B
+
+Dates for the -a and -b options should be specified in ISO format (YYYY-MM-DD) optionally
+followed by +N or _N to specify a number of days before or after that date. For example,
+to only return sequences within 28 days of Jan 1st 2021, use:
+
+  -a 2021-01-01_28 -b 2021-01-01+28
+
+""")
+
+        def run(self):
+            good = False
+            with open(self.outfile, "w") as out:
+                with open(self.filename, "r") as f:
+                    for line in f:
+                        if line[0] == '>':
+                            good = checkHeader(line.rstrip("\r\n"))
+                            if good:
+                                out.write(line)
+                        elif good:
+                            out.write(line)
+
+        def checkHeader(self, hdr):
+            parts = hdr.split("|")
+            name = parts[0]
+            if self.nameWanted and self.nameWanted not in name:
+                return False
+            if self.nameNotWanted and self.nameNotWanted in name:
+                return False
+            date = date.fromisoformat(parts[2])
+            if self.fromDate and date < self.fromDate:
+                return False
+            if self.toDate and date > self.toDate:
+                return False
+            return True
+
+if __name__ == "__main__":
+    args = sys.argv[1:]
+    G = GisaidFilt()
+    if G.parseArgs(args):
+        G.run()
+    else:
+        G.usage()

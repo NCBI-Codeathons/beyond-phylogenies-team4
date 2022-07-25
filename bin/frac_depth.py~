@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+
+__doc__ = """Compute fraction of bases for MN908947.3 at or above a desired depth."""
+
+import sys, csv
+
+def main(filename, depth):
+    nbases = 0
+    ngood = 0
+    maxbase = 0
+
+    with open(filename, "r") as f:
+        c = csv.reader(f, delimiter="\t")
+        for row in c:
+            if row[0] == "MN908947.3":
+                start = int(row[1])
+                end = int(row[2])
+                size = end - start
+                d = int(row[3])
+                nbases += size
+                maxbase = max(maxbase, end)
+                if d >= depth:
+                    ngood += size
+    print (nbases, maxbase, ngood)
+
+if __name__ == "__main__":
+    main(sys.argv[1], int(sys.argv[2]))

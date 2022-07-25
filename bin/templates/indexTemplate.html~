@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<HTML>
+  <HEAD>
+    <TITLE>COVID-Seq reports - Salemi Lab - University of Florida</TITLE>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <style>
+.nomarg {
+  margin: 0px;
+}
+    </style>
+    <script>
+function openPage(pageName) {
+  var i;
+  var x = document.getElementsByClassName("page");
+  for (i = 0; i < x.length; i++) {
+    x[i].style.display = "none";
+  }
+  document.getElementById(pageName).style.display = "block";
+}
+</script>
+  </HEAD>
+  <BODY bgcolor="#DDDDDD">
+
+    <h1 class="w3-blue nomarg">COVID-Seq reports - Salemi Lab - University of Florida</h1>
+
+    <blockquote>
+    <div class="w3-border w3-border-bottom w3-light-grey">
+      <div class="w3-bar w3-blue">
+	<button class="w3-bar-item w3-button" onclick="openPage('Summary')">Summary</button>
+	<button class="w3-bar-item w3-button" onclick="openPage('Runs')">Runs</button>
+	<button class="w3-bar-item w3-button" onclick="openPage('Groups')">Groups</button>
+      </div>
+      
+      <div id="Summary" class="page w3-panel">
+	<h2>Summary</h2>
+##Stats
+      </div>
+      
+      <div id="Runs" class="page w3-panel" style="display:none">
+	<h2>Runs</h2>
+	<table class="w3-table-all w3-hoverable">
+	  <tr>
+	    <th>Name</th>
+	    <th class='w3-right-align'>Samples</th>
+	    <th>Sequencing stats</th>
+	    <th>Coverage stats</th>
+	    <th>Lineage results</th>
+	    <th>Notes</th>
+	  </tr>
+##Runs
+	  </tr>
+	</table>
+      </div>
+      
+      <div id="Groups" class="page w3-panel" style="display:none">
+	<h2>Groups</h2>
+	<table class="w3-table-all w3-hoverable">
+	  <tr>
+	    <th>Name</th>
+	    <th class='w3-right-align'>Samples</th>
+	    <th>Sequencing stats</th>
+	    <th>Coverage stats</th>
+	    <th>Lineage results</th>
+	    <th>Notes</th>
+	  </tr>
+##Groups
+	  </tr>
+	</table>
+
+      </div>
+    </div>
+    </blockquote>
+    <h4 class="w3-blue nomarg">ICBR Bioinformatics Core</h4>
+  </BODY>
+</HTML>

@@ -1,0 +1,27 @@
+Mon Jul 25 10:52:50 EDT 2022
+/blue/salemi/brittany.rife/phyloFLACO/R01-NS2208_2021-02-10
+c0712a-s24.ufhpc
+
+Lmod is automatically replacing "python/3.8" with "viralmsa/1.1.12".
+
+[2022-07-25 10:52:57] ===== RUN INFORMATION =====
+[2022-07-25 10:52:57] ViralMSA Version: 1.1.12
+[2022-07-25 10:52:57] Sequences: /blue/salemi/brittany.rife/phyloFLACO/R01-NS2208_2021-02-10/R01-NS2208_florida_2021-02-10_gapstripped.fa
+[2022-07-25 10:52:57] Reference: cov_reference.fasta_HASH_105c82802b67521950854a851fc6eefd
+[2022-07-25 10:52:57] Email Address: brittany.rife@ufl.edu
+[2022-07-25 10:52:57] Output Directory: /blue/salemi/brittany.rife/phyloFLACO/R01-NS2208_2021-02-10/R01-NS2208_florida_2021-02-10_aln
+[2022-07-25 10:52:57] Aligner: minimap2
+[2022-07-25 10:52:57] ViralMSA Cache Directory: /home/brittany.rife/.viralmsa
+[2022-07-25 10:52:57] 
+[2022-07-25 10:52:57] ===== REFERENCE GENOME =====
+[2022-07-25 10:52:57] Reference genome found: /home/brittany.rife/.viralmsa/cov_reference.fasta_HASH_105c82802b67521950854a851fc6eefd/cov_reference.fasta
+[2022-07-25 10:52:57] Building Minimap2 index: minimap2 -t 4 -d /home/brittany.rife/.viralmsa/cov_reference.fasta_HASH_105c82802b67521950854a851fc6eefd/cov_reference.fasta.mmi /home/brittany.rife/.viralmsa/cov_reference.fasta_HASH_105c82802b67521950854a851fc6eefd/cov_reference.fasta
+[2022-07-25 10:52:57] Minimap2 index built: /home/brittany.rife/.viralmsa/cov_reference.fasta_HASH_105c82802b67521950854a851fc6eefd/cov_reference.fasta.mmi
+[2022-07-25 10:52:57] 
+[2022-07-25 10:52:57] ===== ALIGNMENT =====
+[2022-07-25 10:52:57] Aligning using Minimap2: minimap2 -t 4 --score-N=0 --secondary=no --sam-hit-only -a -o /blue/salemi/brittany.rife/phyloFLACO/R01-NS2208_2021-02-10/R01-NS2208_florida_2021-02-10_aln/R01-NS2208_florida_2021-02-10_gapstripped.fa.sam /home/brittany.rife/.viralmsa/cov_reference.fasta_HASH_105c82802b67521950854a851fc6eefd/cov_reference.fasta.mmi /blue/salemi/brittany.rife/phyloFLACO/R01-NS2208_2021-02-10/R01-NS2208_florida_2021-02-10_gapstripped.fa
+[2022-07-25 10:52:59] Minimap2 alignment complete: /blue/salemi/brittany.rife/phyloFLACO/R01-NS2208_2021-02-10/R01-NS2208_florida_2021-02-10_aln/R01-NS2208_florida_2021-02-10_gapstripped.fa.sam
+[2022-07-25 10:52:59] Converting SAM to FASTA...
+[2022-07-25 10:52:59] Multiple sequence alignment complete: /blue/salemi/brittany.rife/phyloFLACO/R01-NS2208_2021-02-10/R01-NS2208_florida_2021-02-10_aln/R01-NS2208_florida_2021-02-10_gapstripped.fa.aln
+Mon Jul 25 10:52:59 EDT 2022
+0 minutes and 9 seconds elapsed.

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+COVIDSEQ_HOME=/blue/salemi/share/COVIDseq-data/bin/
+
+# This script is meant to be run in the top-level directory produced
+# by the RNA Pathogen Detection App.
+
+# First arg is a file containing the mapping between directory names and sample names
+
+mkdir -p consensus
+

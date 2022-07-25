@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# Set up the environment to run FLACO tools
+
+export FLACO_HOME=/blue/salemi/share/COVIDseq/
+
+export PATH=$FLACO_HOME/bin:$PATH
+export FLACO_DATA=$FLACO_HOME/metadata/
+export FLACO_DB=$FLACO_DATA/flaco.db
+export FLACO_TEMPLATES=${FLACO_HOME}/bin/templates/
+export MAKEFILES=$FLACO_HOME/bin/Makefile
+export PYTHONPATH=$FLACO_HOME/bin:$PYTHONPATH
+export PROMPT_COMMAND=
+export PS1="[\h]\W:FLACO> "
+module purge
+module load dibig_tools python/3.8
+
+echo FLACO environment initialized.

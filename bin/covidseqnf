@@ -1,0 +1,45 @@
+#!/bin/bash
+
+COVIDSEQNF_HOME=/blue/salemi/share/COVIDseq/covidseq-nf/
+
+SAMPLES=$1
+shift
+
+if [[ -z $SAMPLES ]];
+then
+  echo "Usage: $0 SAMPLES [workflow-opts]"
+  echo
+  echo "where SAMPLES is a tab-delimited file containing three columns:"
+  echo
+  echo "sample    fastq_R1    fastq_R2"
+  echo
+  echo "NOTE: fastq_R1 and fastq_R2 should be absolute paths."
+  echo
+  exit
+fi
+
+if [[ "$SAMPLES" == "-f" ]];
+then
+  SAMPLES=$1
+  for smp in $(cat $SAMPLES);
+  do
+    r1=$(ls *_${smp}_*/${smp}*_R1_*.fastq.gz)
+    r2=$(ls *_${smp}_*/${smp}*_R2_*.fastq.gz)
+    echo -e "${smp}\t${PWD}/${r1}\t${PWD}/${r2}"
+  done
+  exit
+fi
+
+if [[ ! -f nextflow.config ]];
+then
+  echo -n "No nextflow.config - proceed anyway? (y/N) "
+  read ans
+  if [[ "$ans" != "y" ]];
+  then
+    exit
+  fi
+fi
+
+nextflow run ${COVIDSEQNF_HOME}/covidseq.nf \
+  -resume -N ${USER}@ufl.edu -with-report coviseq-report.html \
+   --samples $SAMPLES $*

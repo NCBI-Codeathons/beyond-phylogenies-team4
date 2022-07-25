@@ -1,0 +1,3 @@
+SAMPLES : 
+	for d in AppResults/*/; do s=$${d%%_*}; echo -e "$$s\t$$d"; done | sort -n > SAMPLES
+

@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+import sys
+import csv
+
+SPIKE = [21563, 25384]
+SPIKELEN = 3821
+
+def frac_depth(filename, depth):
+    """Returns the fraction of bases with depth higher than `depth' in BED file `filename'."""
+    nbases = 0
+    ngood = 0
+    spikegood = 0
+
+    with open(filename, "r") as f:
+        c = csv.reader(f, delimiter="\t")
+        for row in c:
+            if row[0] == "MN908947.3":
+                start = int(row[1])
+                end = int(row[2])
+                size = end - start
+                d = int(row[3])
+                nbases += size
+                if d >= depth:
+                    ngood += size
+                    if SPIKE[0] <= start < end <= SPIKE[1]:
+                        spikegood += size
+    if nbases:
+        return (100.0*ngood/nbases, 100.0*spikegood/SPIKELEN)
+    else:
+        return 0.0
+

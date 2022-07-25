@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for smp in $(cut -f 1 $1);
+do
+  f1=$(ls *${smp}*/*_R1_*.fastq.gz)
+  f2=$(ls *${smp}*/*_R2_*.fastq.gz)
+  echo -e "${smp}\t${PWD}/${f1}\t${PWD}/${f2}"
+done
