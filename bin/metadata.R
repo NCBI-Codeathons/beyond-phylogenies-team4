@@ -39,8 +39,18 @@ if(isTRUE(any(metadata$ID %notin% lineages$ID))) {
 }
   
 metadata = left_join(lineages, metadata, by="ID")
+
+updated_meta = list.files(path="../", pattern="updated_metadata")
+
+if(isTRUE(length(updated_meta)>0)) {
+	dates = as.Date(gsub(".+(\\d{4}-\\d{2}-\\d{2}).+", "\\1", updated_meta))
+	latest_date = max(dates)
+	latest_meta = paste0("../", updated_meta[grepl(latest_date, updated_meta)])
+	latest_meta = read.delim(latest_meta, sep='\t', header=T)
+	metadata = full_join(latest_meta, metadata)
+	}
   
-write.table(metadata, file=paste0("updated_metadata_", Sys.Date(), ".tab"), quote=F, row.names=F, sep='\t')
+write.table(metadata, file=paste0("../updated_metadata_", Sys.Date(), ".tab"), quote=F, row.names=F, sep='\t')
 
 
 
