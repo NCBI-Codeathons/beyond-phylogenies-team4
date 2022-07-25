@@ -2,23 +2,18 @@
 # RETRIEVE REFERENCE LINEAGES USED BY PANGOLIN
 
 
-Must haves in folder:
-cov_reference/cov_reference.fasta
-faToVcf
-mask_aln_using_vcf.py
 
-
-1. Initiate FLACO environment
+1. Initiate FLACO environment (or simply add bin to PATH)
 
 	```
-	source /blue/salemi/share/COVIDseq/bin/FLACO #Note: made alias "flaco"
+	source bin/FLACO 
 	```
 	
-2. Download most up-to-date gisaid alignment (currently folder set up in /blue/salemi/brittany.rife/cov/gisaid_msa). Below no longer works for some reason, so have to do it manually.
+2. Download most up-to-date gisaid alignment and place in "gisaid_msa" directory. Below no longer works for some reason, so have to do it manually.
 
 	```
 	mkdir gisaid_msa
-	wget --user <username> --password <password> https://www.epicov.org/epi3/	msa_1111.tar.xz
+	wget --user <username> --password <password> https://www.epicov.org/epi3/msa_dddd.tar.xz
 	tar -xvf msa*
 	cd ../
 	```
@@ -69,6 +64,7 @@ mask_aln_using_vcf.py
 9. Download most recent masked sites vcf (needs to be automated so that new file replaces old file instead of being renamed):
 
 	```
+	rm problematic_sites_sarsCov2.vcf
 	wget - O ../problematic_sites_sarsCov2.vcf https://raw.githubusercontent.com/W-L/ProblematicSites_SARS-CoV2/master/problematic_sites_sarsCov2.vcf
 	```
 
@@ -91,48 +87,87 @@ mask_aln_using_vcf.py
 
 # ALIGNMENT OF INITAL DATA ##############################################################
 
-1. In the meantime, can align sequences using viralmsa:
-
-	```
-	cd initial_data
-	seq_cleaner.py -g ${today}.fa > ref_lineages_${today}_gapstripped.fa
-	ml viralmsa  
-	ViralMSA.py -s <initial>.fasta -t 4 -e 	brittany.rife@ufl.edu -o <initial> -r MN908947
-	```
-	 
-2. Check for extensive gaps in sequences	(may need to reduce sed command above)
+1. Meanwhile, create directory for initial sequencing run and extract sequences from desired region from database that correspond to the relevant time frame:
 	
 	```
-	grep -o "-" <initial>/<initial>.aln | wc -l | awk '$1>300{c++} END{print c+0}'
+	RUN=<Sequencing run number/name>
+	MSADATE=<Date (mmdd) of most recent gisaid msa deposit>
+	DATE1=<earliest collection date (yyyy-mm-dd) of sampled sequences>
+	DATE2=<latest collection date (yyyy-mm-dd) of sampled sequences>
+	
+	mkdir ${run}_${today}
+	cd ${run}_${today}
+	cp /path/to/consensus/sequences/FASTA ./${run}_${today}.fasta
+	gisaidfilt.py ../gisaid_msa/msa_${MSADATE}/msa_${MSADATE}.fasta -n USA/FL -a ${DATE1}_00 -b ${DATE2}+00  -o florida_${today}.fasta 
+	```
+
+14. Combine in-house sequences with GISAID Floridian sequences:
+	
+	```
+	cat ${run}_${today}.fasta florida_${today}.fasta > ${run}_florida_${today}.fasta
+	```
+
+15. Meanwhile, remove Floridian sequences from GISAID database (flaco_blast now in nextflow), which results in a new "clean.fa" gisaid database:	
+16. 
+	```
+	mkdir ../flaco_blast;
+	cd ../flaco_blast;
+	flaco_blast.sh makedb ../gisaid_msa/msa_${MSADATE}/msa_${MSADATE}.fasta USA/FL
+	```
+	
+16. FLACOBLAST combined sequences against new GISAID global database:
+	
+	```
+	cd ../${run}_${today}
+	seq_cleaner.py -g ${run}_florida_${today}.fasta > ${run}_florida_${today}_gapstripped.fa
+	cd ../flaco_blast
+	flaco_blast.sh run ../${run}_${today}/${run}_florida_${today}_gapstripped.fa msa_${MSADATE}.clean.fa
+	``` 
+	**Note**: Used to need to be run in the same folder as the folder containing the dbs from the previous step, but may no longer be the case (will ask)
+
+18. Combine target sequences with original query sequences
+	
+	```
+	cd ../${run}_${today}
+	cat ${run}_florida_${today}_gapstripped.fasta ../flaco-blast/msa_${MSADATE}.clean.out.fa > ${run}_florida_gisaid_${today}_gapstripped.fa
+	```
+	
+1. Now we can align sequences using viralmsa:
+
+	```
+	ViralMSA.py -s ${run}_florida_gisaid_${today}_gapstripped.fa -t 4 -e 	brittany.rife@ufl.edu -o ${run}_florida_gisaid_${today}_aln -r ../cov_reference/*fasta
+	```
+	 
+2. Check for extensive gaps in sequences (viralmsa can sometimes result in extensive gaps if number of ambiguous sites is too high). This step does not necessarily have to be automated if earlier step filters out low-quality sequences.
+	
+	```
+	grep -o "-" ${run}_florida_${today}_aln/${run}_florida_${today}.aln | wc -l | awk '$1>300{c++} END{print c+0}'
 	```
 
 3. Check for gaps in reference sequence (shouldn't be there). If found, need to either use mafft or report in metadata file:
 	
 	```
-	head -n 2 <initial>/<initial>.aln | tail -n 1 | grep -o "-" | wc -l
+	head -n 2 ${run}_florida_${today}_aln/${run}_florida_${today}.aln | tail -n 1 | grep -o "-" | wc -l
 	```
 	
 	(If mafft necessary):
 	
 	```
-	ml mafft
-	mafft --thread -1 <initial>.fasta > <initial>.aln
-	mafft --retree 3 --maxiterate 10 --thread -1 --nomemsave --op 10 seqsCausingInsertionsInRef.fasta > seqsCausingInsertionsInRef_aligned.fasta
-	mafft --thread 1 --quiet --keeplength --add sequencesNotCausingInsertionsInRef.fa seqsCausingInsertionsInRef_aligned.fasta > <Run#>_florida_gisaid.aln
+	mafft --thread -1 ${run}_florida_${today}.fasta > ${run}_florida_${today}.aln	mafft --retree 3 --maxiterate 10 --thread -1 --nomemsave --op 10 seqsCausingInsertionsInRef.fasta > seqsCausingInsertionsInRef_aligned.fasta
+	mafft --thread 1 --quiet --keeplength --add sequencesNotCausingInsertionsInRef.fa seqsCausingInsertionsInRef_aligned.fasta > ${run}_florida_${today}.aln
 	```
 
 4. Mask uncertain sites
 
 	```
-	ml python
-	python ../mask_aln_using_vcf.py -i ref_lineages_${today}/*.aln -o ref_lineages_${today}_masked.aln -v ../problematic_sites_sarsCov2.vcf
+	python mask_aln_using_vcf.py -i ${run}_florida_${today}_aln/${run}_florida_${today}.aln -o ${run}_florida_${today}_masked.aln -v ../bin/problematic_sites_sarsCov2.vcf
 	```
 	
 5. Change first sequence header to just MN908947.3 (spaces in original name wreak havoc downstream):
 	
 	```
-	var=">MN908947.3"
-	sed -i "1s/.*/$var/" <initial>/<initial>.aln 
+	REF=">MN908947.3"
+	sed -i "1s/.*/$REF/" ${run}_florida_${today}_masked.aln
 	```
 	
 		
@@ -141,11 +176,9 @@ mask_aln_using_vcf.py
 1.  Create ML tree using IQ-TREE job script (which will automatically run on a fasta file):
 	
 	```
-	cd <initial>
-	file=$(ls *masked.aln)
-	ml iq-tree
-	iqtree2 -s $file -bb 1000 -nt AUTO -m GTR+I+G
+	iqtree2 -s ${run}_florida_${today}_masked.aln -bb 1000 -nt AUTO
 	```
+	
 2. Create metadata.txt file containing minimal information used for DYNAMITE:
 	
 	```
@@ -189,45 +222,9 @@ mask_aln_using_vcf.py
 	```
 
 
-# FLACO-BLAST ON NEW SEQUENCE DATA  ##########################################################################
 
-### The following are performed to generate consensus sequences from Illumina data: ##############
 
-1. Metadata information is provided in the form of an Excel sheet and is uploaded into an informal database structure that can be queried.
-
-2. Upload sequences to GISAID
-
-3. Load basement module:
-    
-    ```
-    ml basemount
-    ```
-
-4. Create folder to copy files and basemount (must be done in home directory and not in blue):
-	
-	```
-	mkdir COVID_FL_${today};
-	basemount COVID_FL_${today};
-	cd COVID_FL_${today};
-	cd Projects/<BaseSpace project name>/AppResults
-	```
-
-5. Copy consensus fasta files from Basespace:
-	
-	```
-	cp ./*/Files/consensus/*.fasta <hipergator dir>
-	```
-	
-6. Identify Pangolin lineage for each sequence (if able) and add to separate database with sequence run information.
-
-7. Filter sequences based on 1) high N content (currently allowing 30%), 2) full date information (YYMMDD), and 3) coverage (>50x across all sites)
-	
-8. Rename sequences so that format similar to GISAID 
-
-9. Append fastas to single fasta file for all sequences thus far 
-
-### End A. Riva ######################################################################
-
+# Wash, rinse, repeat
 10. Update (assuming existing) dates.txt file with new date and assign current ("today") and previous ("previous") date variables:
 	
 	```
@@ -244,55 +241,8 @@ mask_aln_using_vcf.py
 	```
 
 
-12. Querying sequences according to run can be performed using the flacoblastdb query structure (only necessary at UF):
-	 
-	 ```
-	
-	 flacodb.py query -r <Run#> +PangoLineage > <Run#>.txt;
-	 awk ‘{print $1}’ <Run#>.txt | tail -n +2 > <Run#>_names.txt
-	 seq_cleaner.py -w <Run#>_names.txt /blue/salemi/share/COVIDseq/all-groups/ALL-consensus.good.dates.fa > <Run#>.fasta &   
-	 ```
-	   
-13. Meanwhile, extract Floridian sequences from database that correspond to the relevant time frame:
-	
-	```
-	gisaidfilt.py ../gisaid_msa/msa_<date>/msa_<date>.fasta -n USA/FL -a <date>_00 -b <date>+00  -o florida_${today}.fasta & 
-	```
-
-14. Combine in-house sequences with GISAID Floridian sequences:
-	
-	```
-	cat <Run#>.fasta florida_${today}.fasta > <Run#>_florida_${today}.fasta
-	```
-
-15. Meanwhile, remove Floridian sequences from GISAID database:	
-	```
-	cd ../flaco-blast;
-	flaco_blast.sh makedb ../gisaid_msa/msa_<date>/msa_<date>.fasta USA/FL &
-	```
-	*Note*: Ignore last line of log that says "Neither -f or -n specified -- refused to clean"
-
-16. Remove gaps for BLAST (actually improves performance)
-	
-	```
-	seq_cleaner.py -g <Run#>_florida_${today}.fasta > <Run#>_florida_${today}_gapstripped.fa &
-	```
 
 
-17. BLAST combined sequences against new GISAID global database:
-	
-	```
-	cd ../flaco_blast
-	flaco_blast.sh run <Run#>_florida_${today}_gapstripped.fa ../flaco_blast/msa_<date>.clean.fa
-	``` 
-	**Note**: Used to need to be run in the same folder as the folder containing the dbs from the previous step, but may no longer be the case (will ask)
-
-18. Combine target sequences with original query sequences
-	
-	```
-	cd ../<Run#>_${today}
-	cat <Run#>_florida_${today}_gapstripped.fa ../flaco-blast/msa_<date>.clean.out.fa > <Run#>_florida_gisaid_${today}_gapstripped.fa
-	```
 19. Run pangolin on newly combined sequences (updated daily because known to change!)
 	
 	```

@@ -1,1 +1,0 @@
-samtools depth -a -r MN908947.3 SED-VTM-4920_tumor.bam

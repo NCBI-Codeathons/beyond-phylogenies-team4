@@ -1,8 +1,0 @@
-[M::main::0.003*1.15] loaded/built the index for 1 target sequence(s)
-[M::mm_mapopt_update::0.003*1.02] mid_occ = 3
-[M::mm_idx_stat] kmer size: 15; skip: 10; is_hpc: 0; #seq: 1
-[M::mm_idx_stat::0.003*1.02] distinct minimizers: 5587 (99.93% are singletons); average occurrences: 1.004; average spacing: 5.332
-[M::worker_pipeline::1.348*3.59] mapped 1180 sequences
-[M::main] Version: 2.17-r941
-[M::main] CMD: minimap2 -t 4 --score-N=0 --secondary=no --sam-hit-only -a -o /blue/salemi/brittany.rife/phyloFLACO/R01-NS2208_2021-02-10/R01-NS2208_florida_2021-02-10_aln/R01-NS2208_florida_2021-02-10_gapstripped.fa.sam /home/brittany.rife/.viralmsa/cov_reference.fasta_HASH_105c82802b67521950854a851fc6eefd/cov_reference.fasta.mmi /blue/salemi/brittany.rife/phyloFLACO/R01-NS2208_2021-02-10/R01-NS2208_florida_2021-02-10_gapstripped.fa
-[M::main] Real time: 1.349 sec; CPU: 4.845 sec; Peak RSS: 0.046 GB
