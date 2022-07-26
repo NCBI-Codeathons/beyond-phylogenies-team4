@@ -18,12 +18,12 @@
 	PATH="$PATH:/flaco/bin"
 	```
 	
-2. Download most up-to-date gisaid alignment and place in "gisaid_msa" directory. Below no longer works for some reason, so have to move in manually.
+2. Download most up-to-date gisaid alignment and place in "gisaid_msa" directory. Below no longer works for some reason, so have to move in manually, but this page might have the answer - https://askubuntu.com/questions/615142/wget-how-to-download-file-from-a-web-page-that-prompts-you-to-click-on-agree-c .
 
 	```
 	MSADATE=<Date (mmdd) of available GISAID msa>;
 	mkdir gisaid_msa;
-	wget --user <username> --password <password> https://www.epicov.org/epi3/msa_${MSADATE}.tar.xz;
+	wget --user <username> --password <password> https://www.epicov.org/epi3/entities/tmp/tmp_sd_2022_07_27_02_21_rfmbn1_2rih773b9433/msa_${MSADATE}.tar.xz;
 	tar -xvf msa*;
 	cd ../;
 	```

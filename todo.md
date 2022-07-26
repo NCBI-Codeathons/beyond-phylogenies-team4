@@ -6,4 +6,4 @@
 4. Modify variant_plotting.R to utilize a VOC file
 5. Modify visualization to include tree (already annotated)
 6. Remove any specific references to FL for any regional analysis
-
+7. Replace FastTreeMP with matUtils matOptimize?
