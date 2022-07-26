@@ -154,10 +154,10 @@
 	```
 	
 	
-20. Merge metadata with pangolin file containing minimal information used for DYNAMITE/PHYLOPART:
+20. Merge metadata with pangolin file containing minimal information used for DYNAMITE/PHYLOPART (*May need to modify so that column names are ID and DATE and first two columns):
 	
 	```
-	Rscript metadata.R  ${run}_metadata.tab --columnName SampleName --lineages  ${run}_florida_gisaid_${today}_lineages.csv
+	Rscript metadata.R  --metadata ${run}_metadata.tab --columnName SampleName --lineages  ${run}_florida_gisaid_${today}_lineages.csv
 	```
 
 21. Run DYNAMITE to identify clusters using tree and metadata (will output individual trees and fasta files for clusters and background):
