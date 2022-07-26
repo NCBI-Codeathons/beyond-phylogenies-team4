@@ -46,7 +46,7 @@ The output from this workflow include the following:
 3. tabular file with mutational information for each cluster (new mutations relative to reference strain)
 4. Plots for novel mutations in Spike, lineage proportions over time, and metadata column distributions over time for each cluster.
 
-Plots can be viewed interactively in the [R Shiny][rshiny] application, including filtering of clusters based on transmission rate, calculated using the [Oster statistic][oster] and described in the context of respiratory virus transmission cluster dynamics by Chaoyue et al. (2022)[deepdynatree].
+Plots can be viewed interactively in the [R Shiny][rshiny] application, including filtering of clusters based on transmission rate, calculated using the [Oster statistic][oster] and described in the context of respiratory virus transmission cluster dynamics by Sun et al. (2022)[deepdynatree].
 
 ## Future Work
 
@@ -55,6 +55,7 @@ Our future work for this pipeline includes:
 * Expanding to other viruses without loss of automated, intuitive design
 * Branch-site selection analysis
 * Visualization of mutations on published protein structures
+* Integration of phylogenetic regression for clinical data (e.g., viral load)
 
 
 ## Dependencies
