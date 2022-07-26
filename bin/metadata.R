@@ -34,7 +34,8 @@ metadata = mutate(metadata, ID=metadata[,colnames(metadata) %in% opt$columnName]
          
 if(isTRUE(any(metadata$ID %notin% lineages$ID))) {
   for (i in 1:nrow(metadata)) {
-    metadata$ID[i] = lineages$ID[grepl(metadata$ID[i], lineages$ID, fixed=T)]
+    metadata$ID[i] = ifelse(length(lineages$ID[grepl(metadata$ID[i], lineages$ID, fixed=T)])>0,
+                            lineages$ID[grepl(metadata$ID[i], lineages$ID, fixed=T)], NA)
   }
 }
   
