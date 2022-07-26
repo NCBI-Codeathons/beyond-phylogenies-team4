@@ -79,7 +79,7 @@ Our future work for this pipeline includes:
 - Toby Koch, Affiliation
 
 ## Acknowledgment
-- We would like to thank the NIH National Library of Medicine/National Center for Biotechnology Information for providing all the required computational resources during the codeathon.
+We would like to thank the NIH National Library of Medicine/National Center for Biotechnology Information for providing all the required computational resources during the codeathon.
 
 ## References
 [phylopart]: Prosperi MC, Ciccozzi M, Fanti I, Saladini F, Pecorari M, Borghi V, Di Giambenedetto S, Bruzzone B, Capetti A, Vivarelli A, Rusconi S, Re MC, Gismondo MR, Sighinolfi L, Gray RR, Salemi M, Zazzi M, De Luca A; ARCA collaborative group. A novel methodology for large-scale phylogeny partition. Nat Commun. 2011;2:321. doi: 10.1038/ncomms1325. Epub 2011 May 24. PMID: 21610724; PMCID: PMC6045912.
