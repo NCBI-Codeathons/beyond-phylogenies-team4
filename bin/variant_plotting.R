@@ -1,5 +1,23 @@
 
 rm(list=ls())
+
+if("optparse" %in% installed.packages()) {
+ library(optparse)
+} else {
+  install.packages(optparse)
+}
+
+.option_list = list(
+  make_option(c("-m", "--metadata"), type="character", default=list.files(pattern="updated_metadata*.tab"),
+              help="metadata file name [default= updated metadata file with tab extension]", metavar="character"),
+make_option(c("-v", "--voc"), type="character", default=list.files(pattern="voc*"),
+              help="file with list of variants of concern coinciding with metadata file  [default= file beginning with 'voc']", metavar="character")
+)
+
+.opt_parser = OptionParser(option_list=.option_list)
+opt = parse_args(.opt_parser)
+
+
 .packages = c("dplyr", "ape", "parallel", "foreach", "lubridate", "RColorBrewer", "ggpubr")
 
 lapply(.packages, library, warn.conflicts=FALSE, character.only=TRUE)
@@ -11,47 +29,37 @@ date=Sys.Date()
 # date="2022-02-11"
 
 # Read in metadata
-metadata <- read.csv(paste0("updated_lineages_", date, ".csv"), header=T) %>%
-  filter(!is.na(lineage) & lineage != "None") %>%
-  filter(!grepl("Haiti", taxon)) %>%
-#  mutate(location=if_else(location=="Global","FL", location)) %>%
-  select(taxon, lineage) %>%
-  mutate(Date = as.Date(gsub(".+\\|(\\d{4}-\\d{2}-\\d{2})\\|.+", "\\1", taxon), 
-                        format="%Y-%m-%d")) %>%
-  mutate(location=gsub("hCoV-19/USA/FL-([A-Za-z]+)-.+", "\\1", taxon)) %>%
-  mutate(location=if_else(grepl("shands|path|STP|UF|SED", location, ignore.case=T), "Alachua", 
-  	if_else(grepl("miami|msl", location, ignore.case=T), "Miami", "FL")))
-  
+metadata <- read.delim(opt$metadata, sep='\t', header=T) %>%
+  filter(!is.na(lineage) & lineage != "None")
 
-metadata <- metadata[!duplicated(metadata$taxon),]
+for (i in seq_along(colnames(metadata))) {
+  if (tryCatch({
+    isTRUE(any(grepl("^id", colnames(metadata)[i], ignore.case = T)))}, error = function(e) stderr() )) {
+    colnames(metadata)[i] <- "ID"
+  } #end first if statement
+  if (tryCatch({
+    isTRUE(any(grepl("date$", colnames(metadata)[i], ignore.case = T)))}, error = function(e) stderr() )) {
+    colnames(metadata)[i] <- "DATE"
+  } else {
+    mutate(metadata,
+    Date = as.Date(gsub(".+\\|(\\d{4}-\\d{2}-\\d{2})\\|.+", "\\1", ID)))
+}
+  #end second if statement
+}# End for loop
+
+metadata <- metadata[!duplicated(metadata$ID),]
 
                   
 ## Define VOC (https://www.cdc.gov/coronavirus/2019-ncov/Variants/Variant-info.html) and group CA Variants (currently no Variants of high consequence)
 
-#VBM <- c("B.1.1.7/Q", "B.1.351", "P.1", "B.1.427/B.1.429", "B.1.525", "B.1.526", "B.1.617.1", "B.1.617.3", "B.1.621", "P2")
-#VOC <- c( "B.1.617.2/AY", "B.1.1.529")
 
-VBM <- c("20E (EU1)","Alpha", "Beta", "Gamma", "Epsilon", "Eta", "Iota", "Kappa", 
-  "B.1.617.3", "Mu", "Zeta")
-VOC <- c( "Delta", "Omicron (Original)", "Omicron (BA.1)", "Omicron (BA.2)")
-metadata <- mutate(metadata,
-                   WHO = if_else(grepl("B.1.177|B.1.177.73", lineage), "20E (EU1)",
-                                  if_else(grepl("B.1.1.7|Q", lineage), "Alpha",
-                                           if_else(grepl("B.1.351", lineage), "Beta",
-                                                   if_else(grepl("P.1", lineage), "Gamma",
-                                                           if_else(grepl("B.1.429|B.1.427", lineage), "Epsilon",
-                                                                   if_else(grepl("B.1.525", lineage), "Eta",
-                                                                           if_else(grepl("B.1.526", lineage), "Iota",
-                                                                                   if_else(grepl("B.1.617.1", lineage), "Kappa",
-                                                                                           if_else(grepl("B.1.617.3", lineage), "B.1.617.3",
-                                                                                                   if_else(grepl("B.1.621|B.1.621.1", lineage), "Mu",
-                                                                                                           if_else(grepl("P.2", lineage), "Zeta",
-                                                                                                                   if_else(grepl("B.1.617.2|AY", lineage), "Delta",
-                                                                                                                           if_else(grepl("B.1.1.529", lineage), "Omicron (Original)",
-                                                                                                                                   if_else(grepl("BA.1", lineage), "Omicron (BA.1)",
-                                                                                                                                           if_else(grepl("BA.2", lineage), "Omicron (BA.2)",
-                                                                                                                                   "Other")))))))))))))))) %>%
-  mutate(Variant = if_else(WHO %in% VBM | WHO %in% VOC, WHO, "Other")) 
+VOC = read.delim(opt$voc, sep='\t', header=T)
+
+## Was very specific here about VOC in metadata, but since uploading file, will need to add a bit of code to 
+## merge file with metadata (and careful with nested lineages!
+
+
+mutate(Variant = if_else(WHO %in% VBM | WHO %in% VOC, WHO, "Other")) 
 
 # Set grouping for color assignment in plot
 n1 <- length(VBM)
@@ -63,9 +71,6 @@ expanded_lineage_cols2 <- c("orange", "red", "darkred", "purple")
 
 
 col <- setNames(c(expanded_lineage_cols1, expanded_lineage_cols2, "black"), c(VBM, VOC, "Other"))
-
-## Filtering base on just 2021
-metadata <- filter(metadata, Date >= "2021-01-01")
 
 lim_x <- c( min(metadata$Date), max(metadata$Date) )
 

@@ -155,13 +155,14 @@
 20. Merge metadata with pangolin file containing minimal information used for DYNAMITE/PHYLOPART:
 	
 	```
-	Rscript metadata.R --tree *treefile --metadata ${run}_metadata.tab --columnName SampleName --lineages  ${run}_florida_gisaid_${today}_lineages.csv
+	tree=$(ls *treefile)
+	Rscript metadata.R --tree ${tree} --metadata ${run}_metadata.tab --columnName SampleName --lineages  ${run}_florida_gisaid_${today}_lineages.csv
 	```
 
 21. Run DYNAMITE to identify clusters using tree and metadata (will output individual trees and fasta files for clusters and background):
 	
 	```
-	sbatch dynamite.sh
+	Rscript dynamite.R -f ${run}_florida_gisaid_${today}_masked.aln -t ${tree} -m ../updated_metadata_${today}.tab -c c -q N 
 	```
 
 
@@ -292,7 +293,7 @@
 	
 	```
 	cd ./background_${today}
-	sbatch ../dynamite.sh
+	Rscript dynamite_background.R
 	```	
 
 39. Run R script to characterize added sequences (add new folder to save discard results):	*This needs to be modified so that when discard tree exists, it will create just a fasta that will need to be processed*
@@ -345,7 +346,7 @@
 tail -n +2 ${i}/*.fasta >> ../full.fasta
 	done
 	```
-44. Raxml is very picky about duplicate sequences. Remove duplicated sequences:
+44. FastTree is very picky about duplicate sequences. Remove duplicated sequences:
 	
 	```
 	for i in $(cat source.txt); cat ${i}/full.fasta | seqkit rmdup -n -o ${i}/clean.aln
@@ -416,7 +417,23 @@ tail -n +2 ${i}/*.fasta >> ../full.fasta
 	for i in $(cat source.txt); do usher -v ${i}.vcf -t ${i}.tree -T 4 -c -u -d ./${i} -o ${i}.pb; done
 	```
 
+## Plotting
 
+1. Plot summary of variants over time (needs modification)
+
+```
+meta=$(ls updated_metadata*)
+Rscript variant_plotting.R -m ${meta} -v voc.tab
+```
+
+1. Plot new mutations for each cluster (relative to reference strain). For mutations relative to corresponding lineage, see section below:
+
+```
+meta=$(ls updated_metadata*)
+for i in *fasta; do
+Rscript mut_analysis.R -q $i -m ${meta} -d ${today};
+done
+```
 
 
 ## For mapping new mutations (relative to corresponding lineage)
@@ -462,10 +479,10 @@ tail -n +2 ${i}/*.fasta >> ../full.fasta
 	mask_aln_using_vcf.py -i ref_lineages_${today}/*.aln -o ref_lineages_${today}_masked.aln -v ../problematic_sites_sarsCov2.vcf
 	```
 
-7. Create R list of lineage-specific alignments for spike (not needed now)
+7. Create R list of lineage-specific alignments for either whole genome (makeRefList.R) or Spike (not needed now)
 
 	```
-	makeRefSpikeList.sh -r ref_lineages_${today}_masked.aln	
+	R makeRefSpikeList.R -r ref_lineages_${today}_masked.aln	
 	```		
 
 
