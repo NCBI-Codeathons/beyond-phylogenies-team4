@@ -50,8 +50,23 @@ Plots can be viewed interactively in the [R Shiny][rshiny] application, includin
 
 ## Future Work
 
-## Dependencies
+Our future work for this pipeline includes:
 
+* Expanding to other viruses without loss of automated, intuitive design
+* Branch-site selection analysis
+* Visualization of mutations on published protein structures
+
+
+## Dependencies
+* [python3](https://www.python.org)
+* [R v4.2.1](https://cloud.r-project.org/)
+* [ViralmMSA](https://github.com/niemasd/ViralMSA)
+* [Pangolin](https://cov-lineages.org/resources/pangolin/installation.html)
+* [IQ-Tree2](https://apolo-docs.readthedocs.io/en/latest/software/applications/iqtree/2.1.2/index.html)
+* [FastTreeMP](http://www.microbesonline.org/fasttree/#Install)
+* [mafft (optional)](https://mafft.cbrc.jp/alignment/software/)
+
+**More on specifics for AWS and R libraries to come
 
 ## Team
 - Aitor Serres Armero, National Human Genome Research Institute
