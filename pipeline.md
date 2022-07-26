@@ -73,6 +73,7 @@
 	```
 	mkdir ../flaco_blast;
 	cd ../flaco_blast;
+	mkdir tmp;
 	flaco_blast.sh makedb ../gisaid_msa/msa_${MSADATE}/msa_${MSADATE}.fasta USA/FL;
 	```
 	
@@ -97,7 +98,7 @@
 	cat ${run}_florida_${today}_gapstripped.fasta ../flaco-blast/msa_${MSADATE}.clean.out.fa > ${run}_florida_gisaid_${today}_gapstripped.fa
 	```
 	
-12. Run pangolin on newly combined sequences (updated daily because known to change!)
+12. Run pangolin on newly combined sequences
 	
 	```
 	pangolin ${run}_florida_gisaid_${today}_gapstripped.fasta --outfile ${run}_florida_gisaid_${today}_lineages.csv	
