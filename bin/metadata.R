@@ -9,8 +9,6 @@ require(dplyr)
 numCores=detectCores()
 
 option_list = list(
-make_option(c("-t", "--tree"), type="character", default=list.files(pattern=".nh"),
-              help="new tree file [default= usher output]", metavar="character"),
 make_option(c("-m", "--metadata"), type="character", default=list.files(pattern="metadata"),
               help="metadata file [default= contains 'metadata']", metavar="character"),
 make_option(c("-n", "--columnName"), type="character", default="SampleName",

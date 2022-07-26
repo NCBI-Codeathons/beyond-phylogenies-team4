@@ -305,29 +305,8 @@
 	cd trees_${today}
 	Rscript ../fitness_calc.R
 	```
-	
-40. If discard tree not present, create one. If so, process fasta from previous step and add to existing annotated tree, and also update source.txt file (sh scripts need to be included or the following code modified by Brittany):
-	
-	```
-	if [ ! -e "discard_${previous}.vcf" ]; then
-       cd 	../discard_${today}; sbatch ../iqtree.sh;
-      else
-    	cat ./cov_reference/cov_reference.fasta >> ./discard_${today}_updated/*.fasta
-		ml python
-		python Fasta2UShER.py -inpath discard_${today}_updated -output discard_${today}.vcf -reference ./cov_reference/cov_reference.fasta	
-		ml usher
-		usher -v discard_${today}.vcf -t ./discard_${today}_updated.tree -T 4 -c -u -d ./discard_${today}_updated -o discard_${today}.pb
-		echo "discard_${today}_updated" >> source.txt
-	fi 
-	```
 
-41. If first condition met above, then need to pre-process tree and fasta (but somehow need to make sure iqtree is finished:
-	    
-	
-	```
-	cat ./cov_reference/cov_reference.fasta >> ./discard_${today}_updated/*.fasta
-	python Fasta2UShER.py -inpath discard_${today}_updated -output discard_${today}.vcf -reference ./cov_reference/cov_reference.fasta	usher -v discard_${today}.vcf -i ./discard_${previous}.pb -T 4 -c -u -d ./discard_${today}_updated -o discard_${today}.pb
-	```
+Steps 40-42 refer to analysis of the discarded sequences (see bottom of page), but are skipped for now.	
 
 42. While discard tree being reconstructed, place pruned background sequences onto previous annotated tree:
 	
@@ -486,6 +465,35 @@ done
 	```
 	R makeRefSpikeList.R -r ref_lineages_${today}_masked.aln	
 	```		
+	
+	
+## For processing of discarded sequences (i.e., tree reconstruction and cluster picking)
+
+Below is disregarded for now, but will be added back in again later.
+
+40. (Skip this step for now) If discard tree not present, create one. If so, process fasta from previous step and add to existing annotated tree, and also update source.txt file (sh scripts need to be included or the following code modified by Brittany):
+	
+	```
+	if [ ! -e "discard_${previous}.vcf" ]; then
+       cd 	../discard_${today}; sbatch ../iqtree.sh;
+      else
+    	cat ./cov_reference/cov_reference.fasta >> ./discard_${today}_updated/*.fasta
+		ml python
+		python Fasta2UShER.py -inpath discard_${today}_updated -output discard_${today}.vcf -reference ./cov_reference/cov_reference.fasta	
+		ml usher
+		usher -v discard_${today}.vcf -t ./discard_${today}_updated.tree -T 4 -c -u -d ./discard_${today}_updated -o discard_${today}.pb
+		echo "discard_${today}_updated" >> source.txt
+	fi 
+	```
+
+41. If first condition met above, then need to pre-process tree and fasta (but somehow need to make sure iqtree is finished:
+	    
+	
+	```
+	cat ./cov_reference/cov_reference.fasta >> ./discard_${today}_updated/*.fasta
+	python Fasta2UShER.py -inpath discard_${today}_updated -output discard_${today}.vcf -reference ./cov_reference/cov_reference.fasta	usher -v discard_${today}.vcf -i ./discard_${previous}.pb -T 4 -c -u -d ./discard_${today}_updated -o discard_${today}.pb
+	```
+	
 
 
 
