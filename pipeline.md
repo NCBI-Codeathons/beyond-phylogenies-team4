@@ -1,12 +1,13 @@
 # Workflow
 
-## Pre-requisite installs:
-	* python3 (standard)
-	* R (https://cloud.r-project.org/)
-	* viralmsa (https://github.com/niemasd/ViralMSA)	* pangolin (https://cov-lineages.org/resources/pangolin/installation.html)
-	* iqtree2 (https://apolo-docs.readthedocs.io/en/latest/software/applications/iqtree/2.1.2/index.html)
-	* FastTreeMP (http://www.microbesonline.org/fasttree/#Install)
-	* mafft (optional)	
+## Dependencies
+* [python3](https://www.python.org)
+* [R v4.2.1](https://cloud.r-project.org/)
+* [ViralmMSA](https://github.com/niemasd/ViralMSA)
+* [Pangolin](https://cov-lineages.org/resources/pangolin/installation.html)
+* [IQ-Tree2](https://apolo-docs.readthedocs.io/en/latest/software/applications/iqtree/2.1.2/index.html)
+* [FastTreeMP](http://www.microbesonline.org/fasttree/#Install)
+* [mafft (optional)](https://mafft.cbrc.jp/alignment/software/)
 
 ## Initalize environment, alignment, and tree
 
@@ -427,7 +428,7 @@ meta=$(ls updated_metadata*)
 Rscript variant_plotting.R -m ${meta} -v voc.tab
 ```
 
-1. Plot new mutations for each cluster (relative to reference strain). For mutations relative to corresponding lineage, see section below:
+1. Plot new mutations for each cluster (relative to reference strain) *Needs modification to utilize vcf instead of MSA*. For mutations relative to corresponding lineage, see section below:
 
 ```
 meta=$(ls updated_metadata*)
