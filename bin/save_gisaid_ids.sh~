@@ -1,9 +1,0 @@
-#!/bin/bash
-
-IN=$1
-
-while read SEQID GISAID;
-do
-  SMPID=$(echo $SEQID | cut -d / -f 3)
-  echo -e "$SMPID\t$GISAID"
-done < $(sed 's/; /\t/' $IN)
