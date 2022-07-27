@@ -25,7 +25,9 @@ opt = parse_args(opt_parser);
 metadata = read.delim(opt$metadata, sep='\t', header=T, stringsAsFactors = F)
 lineages = read.delim(opt$lineages, sep=',', header=T)
 lineages = dplyr::rename(lineages, ID=taxon) %>%
-  mutate(DATE = as.Date(gsub(".+\\|(\\d{4}-\\d{2}-\\d{2})\\|.+", "\\1", ID)))
+  mutate(DATE = gsub(".+\\|(\\d{4}-\\d{2}-\\d{2})\\|.+", "\\1", ID)) %>%
+  mutate(DATE=ifelse(grepl("00", DATE), gsub("00", "01", DATE), DATE)) %>%
+  mutate(DATE=as.Date(DATE))
 
 
 metadata = mutate(metadata, ID=metadata[,colnames(metadata) %in% opt$columnName]) %>%
@@ -49,7 +51,8 @@ for (i in seq_along(colnames(metadata))) {
   }
 }
   
-  metadata = left_join(lineages, metadata, by=c("ID", "DATE"))
+  metadata = left_join(lineages, metadata, by=c("ID", "DATE")) %>%
+    dplyr::select(ID, DATE, everything())
 
 
 
