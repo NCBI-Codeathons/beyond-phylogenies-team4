@@ -83,6 +83,7 @@
 	mkdir ../flaco_blast;
 	cd ../flaco_blast;
 	mkdir tmp;
+	ulimit -c unlimited;
 	flaco_blast.sh makedb ../gisaid_msa/msa_${MSADATE}/msa_${MSADATE}.fasta USA/FL;
 	```
 	
@@ -166,6 +167,7 @@
 	tree=$(ls *treefile)
 	Rscript dynamite.R -f ${run}_florida_gisaid_${today}_masked.aln -t ${tree} -m ../updated_metadata_${today}.tab -c c -q N 
 	```
+	
 22. Add reference sequence again to each of the newly generated fasta files (original fasta is split according to cluster):
 	
 	```

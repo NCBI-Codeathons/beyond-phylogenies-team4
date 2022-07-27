@@ -50,14 +50,125 @@
 	echo ${today} >> dates.txt;
 	```
 
-2. Preliminarily add samples to all previous trees using UShER in order to evaluate thir best-fitting cluster origin (creating new temporary pb files for today's date):
+3. Download most recent masked sites vcf (needs to be automated so that new file replaces old file instead of being renamed):
+
+	```
+	rm problematic_sites_sarsCov2.vcf;
+	wget - O ../bin/problematic_sites_sarsCov2.vcf https://raw.githubusercontent.com/W-L/ProblematicSites_SARS-CoV2/master/problematic_sites_sarsCov2.vcf &
+	```
+
+
+4. Extract sequences from desired region from database that correspond to the relevant time frame:
+
+	```
+	gisaidfilt.py ../gisaid_msa/msa_${MSADATE}/msa_${MSADATE}.fasta -n USA/FL -a ${DATE1}_00 -b ${DATE2}+00  -o florida_${today}.fasta;
+	```
+
+5. Combine in-house sequences with GISAID Floridian sequences:
+	
+	```
+	cat ${run}_${today}.fasta florida_${today}.fasta > ${run}_florida_${today}.fasta;
+	```
+
+6. Remove Floridian sequences from GISAID database, which results in a new "clean.fa" gisaid database:	
+ 
+	```
+	mkdir ../flaco_blast;
+	cd ../flaco_blast;
+	mkdir tmp;
+	ulimit -c unlimited;
+	flaco_blast.sh makedb ../gisaid_msa/msa_${MSADATE}/msa_${MSADATE}.fasta USA/FL;
+	```
+	
+7. Strip sequences of gaps (improves BLAST performance):
+
+	```
+	cd ../${run}_${today}
+	seq_cleaner.py -g ${run}_florida_${today}.fasta > ${run}_florida_${today}_gapstripped.fa
+	```
+
+8. (FLACO)BLAST combined sequences against new GISAID global database:
+	
+	```
+	cd ../flaco_blast
+	flaco_blast.sh run ../${run}_${today}/${run}_florida_${today}_gapstripped.fa msa_${MSADATE}.clean.fa
+	```
+
+9. Combine target sequences with original query sequences
+	
+	```
+	cd ../${run}_${today}
+	cat ${run}_florida_${today}_gapstripped.fa ${run}_florida_${today}_gapstripped.out.fa > ${run}_florida_gisaid_${today}_gapstripped.fa
+	```
+	
+10. Run pangolin on newly combined sequences
+	
+	```
+	pangolin ${run}_florida_gisaid_${today}_gapstripped.fasta --outfile ${run}_florida_gisaid_${today}_lineages.csv &	
+	```
+	
+11. In the meantime, perform multiple sequence alignment using viralmsa:
+
+	```
+	ViralMSA.py -s ${run}_florida_gisaid_${today}_gapstripped.fa -t 4 -e 	brittany.rife@ufl.edu -o ${run}_florida_gisaid_${today}_aln -r ../cov_reference/*fasta
+	```
+	
+
+12. **Steps 14-15 need to be automated so that if true, mafft is used; else, viralmsa alignment is kept**. Check for extensive gaps in sequences (viralmsa can sometimes result in extensive gaps if number of ambiguous sites is too high). This step does not necessarily have to be automated if earlier step filters out low-quality sequences.
+	
+	```
+	grep -o "-" ${run}_florida_gisaid_${today}_aln/${run}_florida_gisaid_${today}.aln | wc -l | awk '$1>300{c++} END{print c+0}'
+	```
+
+13. Check for gaps in reference sequence (shouldn't be there). If found, need to either use mafft or report in metadata file:
+	
+	```
+	head -n 2 ${run}_florida_gisaid_${today}_aln/${run}_florida_gisaid_${today}.aln | tail -n 1 | grep -o "-" | wc -l
+	```
+	
+14. If mafft necessary, run the following:
+	
+	```
+	mafft --thread -1 ${run}_florida_gisaid_${today}.fasta > ${run}_florida_gisaid_${today}_aln/${run}_florida_gisaid_${today}.aln	mafft --retree 3 --maxiterate 10 --thread -1 --nomemsave --op 10 seqsCausingInsertionsInRef.fasta > seqsCausingInsertionsInRef_aligned.fasta
+	mafft --thread 1 --quiet --keeplength --add sequencesNotCausingInsertionsInRef.fa seqsCausingInsertionsInRef_aligned.fasta > ${run}_florida_gisaid_${today}.aln
+	```
+
+	```
+
+15. Mask uncertain sites
+
+	```
+	python3 mask_aln_using_vcf.py -i ${run}_florida_gisaid_${today}_aln/${run}_florida_gisaid_${today}.aln -o ${run}_florida_gisaid_${today}_masked.aln -v problematic_sites_sarsCov2.vcf
+	```
+16. Merge metadata with pangolin file containing minimal information used for DYNAMITE/PHYLOPART (**May need to modify so that final column names are ID and DATE and first two columns**):
+	
+	```
+	Rscript metadata.R  --metadata ${run}_metadata.tab --columnName SampleName --lineages  ${run}_florida_gisaid_${today}_lineages.csv
+	```
+
+
+17. Copy FaToVcf to working directory (required for UShER):
+		
+	```
+	rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/faToVcf .
+	chmod +x faToVcf
+	```
+				
+18. Transform fasta sub-alignments (now distinct for each cluster) to vcf format (for UShER processing of mutation-annotated trees):
+	
+	```
+	for i in ./*.fasta; do ./faToVcf -ref=MN908947.3 ${i} ${i%.fasta}.vcf; done
+	```
+
+	
+19. Preliminarily add samples to all previous trees using UShER in order to evaluate thir best-fitting cluster origin (creating new temporary pb files for today's date):
 	
 	```
 	for i in $(ls | grep "${previous}.pb"); 
 	do usher -i ${i} -v ${run}_${today}/${run}_florida_gisaid_${today}_masked.vcf -o -p ${i%_${previous}.pb}_${today}_prelim.pb; done	
 	```
 
-3. Compute parsimony score for new samples (vcf) assigned to each annotated tree (.pb files):
+20. Compute parsimony score for new samples (vcf) assigned to each annotated tree (.pb files):
 	
 	```
 	for i in $(ls | grep "${previous}.pb"); do 
@@ -66,14 +177,14 @@
 	done
 	```
 	
-4. Previous step will generate parsimony scores in tsv files, which we need to rename and copy to single folder for R analysis:
+21. Previous step will generate parsimony scores in tsv files, which we need to rename and copy to single folder for R analysis:
 	
 	```
 	mkdir BPS_${today};
 	for i in ./*_${today}; do mv ${i}/parsimony-scores.tsv BPS_${today}/${i}_parsimony-scores.tsv; done
 	```
 	
-5. Use R script to evaluate parsimony scores from tsv files and output new fasta files for sequences needing to be placed on trees (currently not working owing to change in usher output):
+22. Use R script to evaluate parsimony scores from tsv files and output new fasta files for sequences needing to be placed on trees (currently not working owing to change in usher output):
 	
 	```
 	cd BPS_${today}
@@ -81,47 +192,47 @@
 	```	
 
 
-6. Add reference sequence again to each of the newly generated fasta files (from previous step):
+23. Add reference sequence again to each of the newly generated fasta files (from previous step):
 	
 	```
 	for i in ./*.fasta; do cat ../cov_reference/cov_reference.fasta >> ${i}; done
 	```
 
-7. Place updated fasta in new folders:
+24. Place updated fasta in new folders:
 	
 	```
 	for i in ./*updated.fasta; do mkdir .${i%.fasta}; cp ${i} .${i%.fasta}; done;
 	cd ../
 	``
 	
-8. Create a list of files that need to be updated for easier scripting:
+25. Create a list of files that need to be updated for easier scripting:
 	
 	```
 	find . -type d -name "*${today}_updated" > source.txt
 	```
 
 	
-9. Convert updated fastas to vcf:
+26. Convert updated fastas to vcf:
 	
 	 ```
 	for i in $(cat source.txt); do faTovcf -ref=MN908947.3 ${i}/*.fasta ${i}/*.vcf; done	
 	```
 
-10. Officially add samples to the cluster phylogenies they belong (creating new, final pb files for today):
+27. Officially add samples to the cluster phylogenies they belong (creating new, final pb files for today):
 	
 	```
 	for i in $(cat source.txt); 
 	do usher -i ${i%_${today}*}_${previous}.pb -v ${i}/*.vcf -u -d -o ${i%_updated}.pb; done
 	```	
 	
-11. Not all trees (.pb) are going to be updated with sequences, so need to find all trees without today's date and make a copy of previous pb with today's date:
+28. Not all trees (.pb) are going to be updated with sequences, so need to find all trees without today's date and make a copy of previous pb with today's date:
 	
 	```
 	for i in ./*${previous}.pb; 
 	do mv -vn ${i} ${i%_${previous}*}_${today}.pb; done
 	```
 
-12. Move new unannotated tree (.nh) files generated from the previous step into one folder (as well as original combined sample fasta) for characterization:
+29. Move new unannotated tree (.nh) files generated from the previous step into one folder (as well as original combined sample fasta) for characterization:
 	
 	```
 	mkdir "trees_${today}";
@@ -129,14 +240,14 @@
 	cp ?????? trees_${today}
 	```
 	
-13. Run modified DYNAMITE to search for (and prune) clusters within background tree: 
+30. Run modified DYNAMITE to search for (and prune) clusters within background tree: 
 	
 	```
 	cd ./background_${today}
 	Rscript dynamite_background.R
 	```	
 
-14. Run R script to characterize added sequences (add new folder to save discard results):	*This needs to be modified so that when discard tree exists, it will create just a fasta that will need to be processed*
+31. Run R script to characterize added sequences (add new folder to save discard results):	*This needs to be modified so that when discard tree exists, it will create just a fasta that will need to be processed*
 	
 	```
 	mkdir "./discard_${today}"
@@ -146,7 +257,7 @@
 
 Analysis of the discarded sequences currently not included but may be added later (see bottom of page).	
 
-15. Place pruned background sequences onto previous annotated tree (*Brittany needs to re-evaluate this description*):
+32. Place pruned background sequences onto previous annotated tree (*Brittany needs to re-evaluate this description*):
 	
 	```
 	cd ../background_${today}_updated;
@@ -156,7 +267,7 @@ Analysis of the discarded sequences currently not included but may be added late
 	usher -v background_${today}.vcf -i ./background_${previous}.pb -T 4 -c -u -d ./background_${today}_updated -o background_${today}.pb;
 	```
 	
-16. Concatenate previous fasta with updated fasta for tree optimization :
+33. Concatenate previous fasta with updated fasta for tree optimization :
 	
 	```
 	for i in $(cat source.txt); do 
@@ -164,13 +275,13 @@ tail -n +2 ${i}/*.fasta >> ../full.fasta
 	done
 	```
 	
-17. FastTree is very picky about duplicate sequences, which can be generated from past regional sequences sharing best hits in FLACO BLAST with newly added regional sequences. UShER ignores new sequences if they are already in the tree, but they are still present in the FASTAs. Whereas I have seqkit to do this here, there are any number of tools that can do this easily:
+34. FastTree is very picky about duplicate sequences, which can be generated from past regional sequences sharing best hits in FLACO BLAST with newly added regional sequences. UShER ignores new sequences if they are already in the tree, but they are still present in the FASTAs. Whereas I have seqkit to do this here, there are any number of tools that can do this easily:
 	
 	```
 	for i in $(cat source.txt); cat ${i}/full.fasta | seqkit rmdup -n -o ${i}/clean.aln
 	```
 
-18. Force bifurcating tree in R (required for tree optimization):
+35. Force bifurcating tree in R (required for tree optimization):
 	
 	```
 	for i in $(cat source.txt); do 
@@ -178,14 +289,14 @@ tail -n +2 ${i}/*.fasta >> ../full.fasta
 	```
 
  
-19. Re-optimize trees (only those that were updated) using FastTree: 
+36. Re-optimize trees (only those that were updated) using FastTree: 
 	
 	```
 	for i in $(cat source.txt); do FastTreeMP -nt -gamma -nni 0 -spr 2 -sprlength 1000 -boot 100 -log fasttree.log -intree ${i}/*.nh.tree ${i}/clean.aln > ${i}/reop.tree; done
 	```
 	
 
-20. Re-annotate (UShER) updated fasttree trees, replacing old ones:
+37. Re-annotate (UShER) updated fasttree trees, replacing old ones:
 	
 	```
 	for i in ${cat source.txt); do
@@ -193,7 +304,7 @@ tail -n +2 ${i}/*.fasta >> ../full.fasta
   	done
   	```
 
-21. Test background and discard trees for clusters (separate R script using actual branchwise algorithm). R script will write new results for discard pile to a new folder, but will write results from background to same folder.
+38. Test background and discard trees for clusters (separate R script using actual branchwise algorithm). R script will write new results for discard pile to a new folder, but will write results from background to same folder.
 
 	If no clusters are found, results are not written, but downstream steps require that the new discard folder exist, so need to copy over.
 
@@ -207,7 +318,7 @@ tail -n +2 ${i}/*.fasta >> ../full.fasta
 	cd ../
 	```
 		
-22. Process fasta and tree for background (will require determining if new files added as a result of R script in step above)
+39. Process fasta and tree for background (will require determining if new files added as a result of R script in step above)
 
 	```
 	cat ./cov_reference/cov_reference.fasta >> ./background_${today}_updated/*.fasta
@@ -216,13 +327,13 @@ tail -n +2 ${i}/*.fasta >> ../full.fasta
 	usher -v background_${today}.vcf -t ./background_${today}_updated.tree -T 4 -c -u -d ./background_${today}_updated -o background_${today}.pb
 	```
 	
-23. Add reference sequence to new cluster fastas and place in new directories:
+40. Add reference sequence to new cluster fastas and place in new directories:
 	
 	```
 	for i in ./*.fasta; do  cat ./cov_reference/cov_reference.fasta >> ${i}; cp ${i} .${i%.fasta}; done
 	```
 	
-24. Update source.txt file with new clusters and process fastas:
+41. Update source.txt file with new clusters and process fastas:
 	
 	```
 	for i in ./*.fasta; do mkdir .${i%.fasta}; echo ${i%.fasta} > source.txt; done	
@@ -230,7 +341,7 @@ tail -n +2 ${i}/*.fasta >> ../full.fasta
 	for i in $(cat source.txt); do python Fasta2UShER.py -inpath ${i} -output ${i}.vcf -reference ./cov_reference/cov_reference.fasta; done
 	```
 	
-25. Perform subtree pre-processing for new clusters:
+42. Perform subtree pre-processing for new clusters:
 	
 	```
 	ml usher	
