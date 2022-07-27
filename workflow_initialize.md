@@ -111,7 +111,7 @@
 12. Run pangolin on newly combined sequences
 	
 	```
-	pangolin ${run}_florida_gisaid_${today}_gapstripped.fasta --outfile ${run}_florida_gisaid_${today}_lineages.csv &	
+	pangolin ${run}_florida_gisaid_${today}_gapstripped.fasta --outfile ${run}_florida_gisaid_${today}_lineages.csv --threads 8 --use-assignment-cache&	
 	```
 	
 13. In the meantime, perform multiple sequence alignment using viralmsa:

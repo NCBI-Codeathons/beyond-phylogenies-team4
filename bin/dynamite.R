@@ -16,7 +16,7 @@ if("optparse" %in% installed.packages()) {
 .option_list = list(
   make_option(c("-t", "--tree"), type="character",  default=list.files(pattern="*.treefile"),
               help="tree file name [default= .treefile extension]", metavar="character"),
-  make_option(c("-m", "--metadata"), type="character", default=list.files(path="../", pattern="*updated_metadata"),
+  make_option(c("-m", "--metadata"), type="character", default=list.files(path="..", pattern="*updated_metadata", full.names = T),
               help="metadata file name [default= '../updated_metadata*']", metavar="character"),
   make_option(c("-q", "--timetree"), type="character", default="Y", 
               help="option (Y/N) for molecular clock calibration and time tree output/statistics [default= Y]", metavar="numeric"),
@@ -30,7 +30,7 @@ if("optparse" %in% installed.packages()) {
               help="serial interval for cluster filtering [default= 100]; if default>>0, filtering based on time is not used", metavar="character"),
   make_option(c("-a", "--asr"), type="character", default="N", 
               help="option (Y/N) of ancestral state reconstruction for each cluster [default= N]", metavar="character"),
-  make_option(c("-f", "--fasta"), type="character", default=list.files(pattern="aln"), 
+  make_option(c("-f", "--fasta"), type="character", default=list.files(pattern="aln$"), 
               help="fasta file [default = 'aln']", metavar="character")
               
 )
@@ -85,13 +85,8 @@ print(paste0("dynamite",
 # The option below is useful when dealing with dates of internal nodes downstream
 options(digits=15)
 
+numCores = detectCores()
 
-# Supply tree and metadata table as arguments
-
-numCores = try(Sys.getenv("SLURM_CPUS_ON_NODE"))
-if (numCores == "") {
-  numCores = detectCores()
-}
 
 
 print("=============================================================================================================================================================")
@@ -142,9 +137,9 @@ if(endsWith(opt$metadata, "csv")) {
   }
 } else {
   if(endsWith(opt$metadata, "tab") | endsWith(opt$metadata, "txt")) {
-    metadata <- read.table(opt$metadata, sep='\t', header=T, stringsAsFactors = F)
+    metadata <- read.delim(opt$metadata, sep='\t', header=T, stringsAsFactors = F)
     if(isTRUE(ncol(metadata)==1)) {
-      metadata <- read.table(opt$metadata, sep=' ', header=T, stringsAsFactors = F)
+      metadata <- read.delim(opt$metadata, sep=' ', header=T, stringsAsFactors = F)
     }
   }
 }
@@ -165,6 +160,14 @@ for (i in seq_along(colnames(metadata))) {
   #end second if statement
 }# End for loop
 metadata <- dplyr::filter(metadata, ID %in% sub_tree$tip.label)
+
+if("MN908947.3" %notin% metadata$ID) {
+  .ref_data = data.frame(ID="MN908947.3", DATE="2019-12-31")
+  metadata = full_join(metadata, .ref_data)
+}
+if (any(sub_tree$tip.label %notin% metadata$ID)) {
+  stop("Not all sequences have associated metadata. Make sure all sequences are accounted for and try again.")
+}
 
 
 
@@ -206,16 +209,6 @@ if(opt$timetree=="Y") {
   } # End checkForDates function
   sts <- checkForDates(metadata)
   
-  lsd_files <- list.files(pattern="lsd2*nexus") 
-  
-  if(length(lsd_files) >0) {
-    sub_tree <- read.beast("lsd2_results.nexus")@phylo
-    time_tree <- read.beast("lsd2_results.date.nexus")@phylo
-    
-    
-  } else {
-    print("Converting substitution tree into timed tree using either treedater or lsd2 and dates provided in metadata file. Please make sure the metadata file contains a column containing the word 'DATE'")
-
     #Script will first use least squares dating approach developed by To et al. (2016) in the package Rlsd2 (https://github.com/tothuhien/lsd2) to 1) find the optimal root position in the tree and 2) remove outliers with longer-than-expected (penalized) branch lengths, and 3) output both a timed tree and rooted substitutions/site tree to the global environment (updates sub_tree).
     # Function to convert sub_tree to time_tree
   
@@ -276,12 +269,10 @@ if(opt$timetree=="Y") {
     print(paste0("The updated most recent sampling date is ", date.mrsd))
   } # End findMRSD function
     findMRSD(time_tree)
-  }
+    
 } else {
   print("No timed tree or related tree statistics will be generated")
 }
-
-
 
 
 # Find all well-supported clades
@@ -301,9 +292,10 @@ define.clades <- function(sub_tree) {
   
   sub_tree$node.label <- as.numeric(sub_tree$node.label)
   
-  if(length(sub_tree$node.label[!is.na(sub_tree$node.label)]) ==0) {
-    print("No support values for internal nodes were found within the tree.")
-    stop()
+  if(isTRUE(length(sub_tree$node.label[!is.na(sub_tree$node.label)]) ==0)) {
+    print("No support values for internal nodes were found within the tree.Assuming all branches are well supported.")
+    sub_tree$node.label=rep(100, sub_tree$Nnode)
+    supported_nodes <- family_tree
   } else {
     if(max(as.numeric(sub_tree$node.label), na.rm=T) >1) {
       supported_nodes <- suppressWarnings(dplyr::filter(family_tree, as.numeric(label) > 90))
@@ -698,6 +690,13 @@ if (opt$cluster == "b") {
     
   } else stop("Incorrect cluster_picking algorithm choice. Please choose between 'b' (branch-wise) or 'c' (clade-wise) and run script again.")}
 
+if(isTRUE(length(clusters)==0)) {
+  stop("No clusters found. Please try a larger threshold.")
+} else {
+  names(clusters) = mclapply(seq_along(clusters), function(x) {
+    names(clusters)[x] = paste0("c", x)
+  }, mc.cores=numCores)
+}
 
 print("Writing cluster (and background) trees to separate files...")
 clusterPhylo <- function() {
@@ -745,7 +744,6 @@ unclusteredPhylo <- function() {
 unclusteredPhylo()
 
 #Employ ancestral state reconstruction of traits (optional)
-
 
 if (opt$asr == "Y"){
 print("ASR performed using the empirical Bayesian method.")
@@ -1142,37 +1140,37 @@ cluster_data <- dplyr::bind_rows(cluster_data, .id = "cluster_id") %>%
   
 print("Annotating trees with cluster assignments...")
 
-TreeAnno <- function(tree, clusters) {
-  clusters.tbl <- dplyr::bind_rows(clusters, .id="cluster_id")
-  tree.tbl <- as_tibble(tree)
-  tree.tbl$cluster_id <- "Background"
-  for (i in 1:nrow(clusters.tbl))  {
-    for (j in 1:nrow(tree.tbl)) {
-     if (isTRUE(tree.tbl$parent[j] == clusters.tbl$parent[i])) {
-        tree.tbl$cluster_id[j] = clusters.tbl$cluster_id[i]
-      } # End if statement
-    } # end loop along tree
-  } # End loop along cluster_data
-  class(tree.tbl) = c("tbl_tree", class(tree.tbl))
-  t2 <- as.treedata(tree.tbl)
-  return(t2)
-}
-
-annotated_subtree <- TreeAnno(sub_tree, clusters)
-
-if (isTRUE(exists("time_tree", envir = globalenv()))) {
-  annotated_timetree <- TreeAnno(time_tree, clusters)
-}
+# TreeAnno <- function(tree, clusters) {
+#   clusters.tbl <- dplyr::bind_rows(clusters, .id="cluster_id")
+#   tree.tbl <- as_tibble(tree)
+#   tree.tbl$cluster_id <- "Background"
+#   for (i in 1:nrow(clusters.tbl))  {
+#     for (j in 1:nrow(tree.tbl)) {
+#      if (isTRUE(tree.tbl$parent[j] == clusters.tbl$parent[i])) {
+#         tree.tbl$cluster_id[j] = clusters.tbl$cluster_id[i]
+#       } # End if statement
+#     } # end loop along tree
+#   } # End loop along cluster_data
+#   class(tree.tbl) = c("tbl_tree", class(tree.tbl))
+#   t2 <- as.treedata(tree.tbl)
+#   return(t2)
+# }
+# 
+# annotated_subtree <- TreeAnno(sub_tree, clusters)
+# 
+# if (isTRUE(exists("time_tree", envir = globalenv()))) {
+#   annotated_timetree <- TreeAnno(time_tree, clusters)
+# }
 
 write("Data are now being exported as 'cluster_info_<tree>.RDS' and 'dynamite_<tree>.tree.'")
-write.csv(select(cluster_data, -parent, -node), paste0("trait_distributions_", opt$tree, ".csv"), quote=F, row.names=F)
-write.csv(cluster_tree_stats, paste0("tree_stats_", opt$tree, ".csv"), quote=F, row.names=F)
+write.csv(select(cluster_data, -parent, -node), paste0("trait_distributions_", Sys.Date(), ".csv"), quote=F, row.names=F)
+write.csv(cluster_tree_stats, paste0("tree_stats_", Sys.Date(), ".csv"), quote=F, row.names=F)
 write.table(branch_length_limit, paste0("branch_length_limit.txt"), row.names=F, col.names = F)
-write.beast(annotated_subtree, paste0("dynamite_subtree_", opt$tree, ".tree")) #### NEED THIS OUTPUT####################################
+#write.beast(annotated_subtree, paste0("subtree_", SysDate(), ".tree")) #### NEED THIS OUTPUT####################################
 
-if (isTRUE(exists("time_tree", envir = globalenv()))) {
-  write.beast(annotated_timetree, paste0("dynamite_timetree_", opt$tree, ".tree")) #### NEED THIS OUTPUT####################################
-}
+# if (isTRUE(exists("time_tree", envir = globalenv()))) {
+#   write.beast(annotated_timetree, paste0("dynamite_timetree_", opt$tree, ".tree")) #### NEED THIS OUTPUT####################################
+# }
 ## Output separate fastas for each tree
 print("Updating individual fastas...")
 
