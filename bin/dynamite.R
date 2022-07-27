@@ -14,24 +14,24 @@ if("optparse" %in% installed.packages()) {
 }
 
 .option_list = list(
-  make_option(c("-t", "--tree"), type="character",  default=list.files(pattern="*.nwk"),
-              help="tree file name [default= .nwk extension]", metavar="character"),
-  make_option(c("-m", "--metadata"), type="character", default=list.files(pattern="*.csv"),
-              help="metadata file name [default= .csv extension]", metavar="character"),
+  make_option(c("-t", "--tree"), type="character",  default=list.files(pattern="*.treefile"),
+              help="tree file name [default= .treefile extension]", metavar="character"),
+  make_option(c("-m", "--metadata"), type="character", default=list.files(path="../", pattern="*updated_metadata"),
+              help="metadata file name [default= '../updated_metadata*']", metavar="character"),
   make_option(c("-q", "--timetree"), type="character", default="Y", 
               help="option (Y/N) for molecular clock calibration and time tree output/statistics [default= Y]", metavar="numeric"),
   make_option(c("-s", "--seqLen"), type="numeric", default=30000, 
               help="sequnce length used in molecular clock calibration [default= 30000]", metavar="numeric"),
-  make_option(c("-c", "--cluster"), type="character", default="b", 
-              help="choice of cluster algorithm from c (Phylopart's cladewise) or b (DYNAMITE's branchwise) [default= dynamite]", metavar="character"),
+  make_option(c("-c", "--cluster"), type="character", default="c", 
+              help="choice of cluster algorithm from c (Phylopart's cladewise) or b (DYNAMITE's branchwise) [default= phylopart]", metavar="character"),
   make_option(c("-l", "--threshold"), default=0.05, 
               help="threshold for cluster determination, which can be numeric or median [default= 0.05]. Note that median is very computationally intense", metavar="character"),
-  make_option(c("-i", "--serial"), default=6, 
-              help="serial interval for cluster filtering [default= 6]", metavar="character"),
+  make_option(c("-i", "--serial"), default=100, 
+              help="serial interval for cluster filtering [default= 100]; if default>>0, filtering based on time is not used", metavar="character"),
   make_option(c("-a", "--asr"), type="character", default="N", 
               help="option (Y/N) of ancestral state reconstruction for each cluster [default= N]", metavar="character"),
-  make_option(c("-f", "--fasta"), type="character", 
-              help="fasta file [ no default]", metavar="character")
+  make_option(c("-f", "--fasta"), type="character", default=list.files(pattern="aln"), 
+              help="fasta file [default = 'aln']", metavar="character")
               
 )
 

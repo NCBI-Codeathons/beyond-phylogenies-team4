@@ -24,7 +24,8 @@ opt = parse_args(opt_parser);
 
 metadata = read.delim(opt$metadata, sep='\t', header=T, stringsAsFactors = F)
 lineages = read.delim(opt$lineages, sep=',', header=T)
-lineages = dplyr::rename(lineages, ID=taxon)
+lineages = dplyr::rename(lineages, ID=taxon) %>%
+  mutate(DATE = as.Date(gsub(".+\\|(\\d{4}-\\d{2}-\\d{2})\\|.+", "\\1", ID)))
 
 
 metadata = mutate(metadata, ID=metadata[,colnames(metadata) %in% opt$columnName]) %>%
@@ -37,7 +38,20 @@ if(isTRUE(any(metadata$ID %notin% lineages$ID))) {
   }
 }
   
-metadata = left_join(lineages, metadata, by="ID")
+for (i in seq_along(colnames(metadata))) {
+  if (tryCatch({
+    isTRUE(any(grepl("date$", colnames(metadata)[i], ignore.case = T)))}, error = function(e) stderr() )) {
+    colnames(metadata)[i] <- "DATE"
+    metadata$DATE=as.Date(metadata$DATE)
+  } else {
+    mutate(metadata,
+           DATE = as.Date(gsub(".+\\|(\\d{4}-\\d{2}-\\d{2})\\|.+", "\\1", ID)))
+  }
+}
+  
+  metadata = left_join(lineages, metadata, by=c("ID", "DATE"))
+
+
 
 updated_meta = list.files(path="../", pattern="updated_metadata")
 
