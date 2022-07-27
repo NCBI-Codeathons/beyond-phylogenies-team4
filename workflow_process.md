@@ -104,7 +104,7 @@
 10. Run pangolin on newly combined sequences
 	
 	```
-	pangolin ${run}_florida_gisaid_${today}_gapstripped.fasta --outfile ${run}_florida_gisaid_${today}_lineages.csv &	
+	pangolin ${run}_florida_gisaid_${today}_gapstripped.fasta --outfile ${run}_florida_gisaid_${today}_lineages.csv --threads 8 --use-assignment-cache &	
 	```
 	
 11. In the meantime, perform multiple sequence alignment using viralmsa:
@@ -145,19 +145,11 @@
 	```
 	Rscript metadata.R  --metadata ${run}_metadata.tab --columnName SampleName --lineages  ${run}_florida_gisaid_${today}_lineages.csv
 	```
-
-
-17. Copy FaToVcf to working directory (required for UShER):
-		
-	```
-	rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/faToVcf .
-	chmod +x faToVcf
-	```
 				
-18. Transform fasta sub-alignments (now distinct for each cluster) to vcf format (for UShER processing of mutation-annotated trees):
+17. Transform fasta to vcf format (for UShER processing of mutation-annotated trees):
 	
 	```
-	for i in ./*.fasta; do ./faToVcf -ref=MN908947.3 ${i} ${i%.fasta}.vcf; done
+	../faToVcf -ref=MN908947.3 *.aln ${run}_florida_gisaid_${today}_masked.vcf; done
 	```
 
 	

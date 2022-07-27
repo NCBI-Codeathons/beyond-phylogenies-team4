@@ -177,14 +177,14 @@
 23. Copy FaToVcf to working directory (required for UShER):
 		
 	```
-	rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/faToVcf .
+	rsync -aP rsync://hgdownload.soe.ucsc.edu/genome/admin/exe/linux.x86_64/faToVcf ../
 	chmod +x faToVcf
 	```
 				
 24. Transform fasta sub-alignments (now distinct for each cluster) to vcf format (for UShER processing of mutation-annotated trees):
 	
 	```
-	for i in ./*.fasta; do ./faToVcf -ref=MN908947.3 ${i} ${i%.fasta}.vcf; done
+	for i in ./*.fasta; do ../faToVcf -ref=MN908947.3 ${i} ${i%.fasta}.vcf; done
 	```
 	
 25. Perform subtree pre-processing with UShER: 
@@ -192,4 +192,6 @@
 	```
 	for i in ./*${today}.tree; do usher -v ${i%.tree}.vcf -t ${i} -T 4 -o ${i%.tree}.pb; done
 	```
+	
+26. Move all MATs and 
 

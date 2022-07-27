@@ -18,8 +18,8 @@ if("optparse" %in% installed.packages()) {
               help="tree file name [default= .treefile extension]", metavar="character"),
   make_option(c("-m", "--metadata"), type="character", default=list.files(path="..", pattern="*updated_metadata", full.names = T),
               help="metadata file name [default= '../updated_metadata*']", metavar="character"),
-  make_option(c("-q", "--timetree"), type="character", default="Y", 
-              help="option (Y/N) for molecular clock calibration and time tree output/statistics [default= Y]", metavar="numeric"),
+  make_option(c("-q", "--timetree"), type="character", default="N", 
+              help="option (Y/N) for molecular clock calibration and time tree output/statistics [default= N]", metavar="numeric"),
   make_option(c("-s", "--seqLen"), type="numeric", default=30000, 
               help="sequnce length used in molecular clock calibration [default= 30000]", metavar="numeric"),
   make_option(c("-c", "--cluster"), type="character", default="c", 
@@ -710,7 +710,7 @@ clusterPhylo <- function() {
     }, mc.cores=numCores)
   assign("clusters_time_tree", clusters_time_tree, envir = globalenv() )
   for (i in seq_along(clusters_time_tree)) {
-    write.tree(clusters_time_tree[[i]], paste0(names(clusters_time_tree)[i], "_timetree_", Sys.Date(), ".tree"))
+    write.tree(clusters_time_tree[[i]], paste0("../", names(clusters_time_tree)[i], "_timetree_", Sys.Date(), ".tree"))
   }
   } # End if statement
     
@@ -722,7 +722,7 @@ clusterPhylo <- function() {
   }, mc.cores=numCores)
   assign("clusters_sub_tree", clusters_sub_tree, envir = globalenv() )
   for (i in seq_along(clusters_sub_tree)) {
-    write.tree(clusters_sub_tree[[i]], paste0(names(clusters_sub_tree)[i], "_", Sys.Date(), ".tree"))
+    write.tree(clusters_sub_tree[[i]], paste0("../", names(clusters_sub_tree)[i], "_", Sys.Date(), ".tree"))
   }
 }
 clusterPhylo()
@@ -738,7 +738,7 @@ unclusteredPhylo <- function() {
     
     if(isTRUE(exists("time_tree", envir = globalenv()))) {
       background_timetree <- drop.tip(time_tree, cluster_tips)
- #   write.tree(background_timetree, file=paste0("background_timetree_", Sys.Date(), ".tree"))
+ #   write.tree(background_timetree, file=paste0("../background_timetree_", Sys.Date(), ".tree"))
     }
 }
 unclusteredPhylo()
@@ -939,6 +939,15 @@ calculatePD <- function(tree) {
   return(pd)
 }
 
+calculateOster <- function(tree) {
+  tree <- multi2di(tree)  
+  cluster_size <- length(tree$tip.label)-1
+  sum_heights <- sum(nodeHeights(tree))
+  longest <- max(nodeHeights(tree))
+  co <- cluster_size/sum_heights + longest
+  return(co)
+}
+
 if (isTRUE(exists("time_tree", envir = globalenv()))) {
   print("Estimating infection rate for each cluster (Oster, 2018)")
 
@@ -953,14 +962,7 @@ if (isTRUE(exists("time_tree", envir = globalenv()))) {
     
     return(df)
   }
-  calculateOster <- function(tree) {
-    tree <- multi2di(tree)  
-    cluster_size <- length(tree$tip.label)-1
-    sum_heights <- sum(nodeHeights(tree))
-    longest <- max(nodeHeights(tree))
-    co <- cluster_size/sum_heights + longest
-    return(co)
-  }
+
 #   calculateNe <- function(tree) {
 #   tree <- multi2di(tree)
 #   res=round(max(nodeHeights(tree))/2) # Daily
@@ -1101,23 +1103,27 @@ gatherStats <- function() {
 #  cluster_cherries <- mclapply(clusters_sub_tree, calculateCC, mc.cores=numCores)
 
   cluster_PD <- mclapply(clusters_sub_tree, calculatePD, mc.cores=numCores)
+  cluster_Oster <- mclapply(clusters_sub_tree, calculateOster, mc.cores=numCores)
   
-  background_dynamics <- data.frame(cluster_id="Background", PD = calculatePD(background_subtree))
+  background_dynamics <- data.frame(cluster_id="Background", 
+                                    PD = calculatePD(background_subtree),
+                                    Oster = calculateOster(background_subtree))
   
   ## Populate cluster_dynamics table
   cluster_dynamics <- mclapply (seq_along(clusters), function(i) {
     data.frame(cluster_id=names(clusters)[i],
-                                        PD = cluster_PD[[i]])}, mc.cores=numCores)
+               PD = cluster_PD[[i]],
+               Oster = cluster_Oster[[i]])}, mc.cores=numCores)
   
   if (isTRUE(exists("time_tree", envir = globalenv()))) {
     for (i in 1:length(cluster_dynamics)) {
       cluster_dynamics[[i]] <- cbind(cluster_dynamics[[i]], timeData(clusters_time_tree[[i]]))
-      cluster_dynamics[[i]]$R_Oster <- calculateOster(clusters_time_tree[[i]])
+#      cluster_dynamics[[i]]$Oster <- calculateOster(clusters_time_tree[[i]])
     }
  
     
     background_dynamics <- cbind(cbind(background_dynamics, 
-                                      data.frame(R_Oster = calculateOster(background_time_tree)),
+                                      #data.frame(Oster = calculateOster(background_time_tree)),
                                                  timeData(background_time_tree)))
 } # End if statement
   names(cluster_dynamics) <- names(clusters)
@@ -1163,13 +1169,13 @@ print("Annotating trees with cluster assignments...")
 # }
 
 write("Data are now being exported as 'cluster_info_<tree>.RDS' and 'dynamite_<tree>.tree.'")
-write.csv(select(cluster_data, -parent, -node), paste0("trait_distributions_", Sys.Date(), ".csv"), quote=F, row.names=F)
-write.csv(cluster_tree_stats, paste0("tree_stats_", Sys.Date(), ".csv"), quote=F, row.names=F)
-write.table(branch_length_limit, paste0("branch_length_limit.txt"), row.names=F, col.names = F)
-#write.beast(annotated_subtree, paste0("subtree_", SysDate(), ".tree")) #### NEED THIS OUTPUT####################################
+write.csv(select(cluster_data, -parent, -node), paste0("../trait_distributions_", Sys.Date(), ".csv"), quote=F, row.names=F)
+write.csv(cluster_tree_stats, paste0("../tree_stats_", Sys.Date(), ".csv"), quote=F, row.names=F)
+write.table(branch_length_limit, paste0("../branch_length_limit.txt"), row.names=F, col.names = F)
+#write.beast(annotated_subtree, paste0("../subtree_", SysDate(), ".tree")) #### NEED THIS OUTPUT####################################
 
 # if (isTRUE(exists("time_tree", envir = globalenv()))) {
-#   write.beast(annotated_timetree, paste0("dynamite_timetree_", opt$tree, ".tree")) #### NEED THIS OUTPUT####################################
+#   write.beast(annotated_timetree, paste0("../timetree_", opt$tree, ".tree")) #### NEED THIS OUTPUT####################################
 # }
 ## Output separate fastas for each tree
 print("Updating individual fastas...")
@@ -1186,11 +1192,11 @@ cluster_fa_list <- mclapply(clusters_sub_tree, function(x) {
 })
 
 for (i in seq_along(cluster_fa_list)) {
-  write.FASTA(cluster_fa_list[[i]], paste0(names(cluster_fa_list)[i], "_", Sys.Date(), ".fasta"))
+  write.FASTA(cluster_fa_list[[i]], paste0("../", names(cluster_fa_list)[i], "_", Sys.Date(), ".fasta"))
 }
 
 background_fa <- fa[names(fa) %in% background_subtree$tip.label]
-write.FASTA(background_fa, paste0("background_", Sys.Date(), ".fasta"))
+write.FASTA(background_fa, paste0("../background_", Sys.Date(), ".fasta"))
 
 rt1 <- Sys.time()
 rt1-rt0

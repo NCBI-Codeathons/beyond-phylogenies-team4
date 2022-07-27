@@ -9,6 +9,8 @@ require(dplyr)
 numCores=detectCores()
 
 option_list = list(
+make_option(c("-o", "--origin"), type="character", default="USA",
+              help="country of origin of metadata [default=USA]", metavar="character"),
 make_option(c("-m", "--metadata"), type="character", default=list.files(pattern="metadata"),
               help="metadata file [default= contains 'metadata']", metavar="character"),
 make_option(c("-n", "--columnName"), type="character", default="SampleName",
@@ -22,13 +24,17 @@ opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
 
-metadata = read.delim(opt$metadata, sep='\t', header=T, stringsAsFactors = F)
+metadata = read.delim(opt$metadata, sep='\t', header=T, stringsAsFactors = F) %>%
+  mutate(Country = opt$origin,
+         Run = gsub(".+\\(\\d{4}-\\d{2}-\\d{2}).+", "\\1", opt$metadata))
+
 lineages = read.delim(opt$lineages, sep=',', header=T)
 lineages = dplyr::rename(lineages, ID=taxon) %>%
   mutate(DATE = gsub(".+\\|(\\d{4}-\\d{2}-\\d{2})\\|.+", "\\1", ID)) %>%
   mutate(DATE=ifelse(grepl("00", DATE), gsub("00", "01", DATE), DATE)) %>%
-  mutate(DATE=as.Date(DATE))
-
+  mutate(DATE=as.Date(DATE)) %>%
+  mutate(Country = gsub("hCoV-19/([A-Za-z]+)/.+", "\\1", ID)) %>%
+  dplyr::select(ID, DATE, lineage)
 
 metadata = mutate(metadata, ID=metadata[,colnames(metadata) %in% opt$columnName]) %>%
   mutate(ID = paste(ID, gsub("(\\d{4}).+", "\\1", SamplingDate), sep="/"))
@@ -62,7 +68,16 @@ if(isTRUE(length(updated_meta)>0)) {
 	dates = as.Date(gsub(".+(\\d{4}-\\d{2}-\\d{2}).+", "\\1", updated_meta))
 	latest_date = max(dates)
 	latest_meta = paste0("../", updated_meta[grepl(latest_date, updated_meta)])
-	latest_meta = read.delim(latest_meta, sep='\t', header=T)
+	latest_meta = read.delim(latest_meta, sep='\t', header=T) %>%
+	  mutate(DATE=as.Date(DATE))
+	
+	for(i in 1:ncol(metadata)) {
+	  for (j in 1:ncol(latest_meta))
+	  if(colnames(metadata)[i] == colnames(latest_meta)[j] &
+	     class(metadata[,i]) != class(latest_meta[,j])) {
+	    class(metadata[,i]) = class(latest_meta[,j])
+	  }
+	}
 	metadata = full_join(latest_meta, metadata)
 	}
   
