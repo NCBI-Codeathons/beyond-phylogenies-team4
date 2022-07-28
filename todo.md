@@ -10,5 +10,5 @@
 1. Alert user when/which cluster(s) have been added to, if have new mutation, and if switched Oster category (???)
 2. Better way to retrieve metadata from NCBI? (Manoj)
 3. Potentially replace viralmsa with an aligner that can handle indels and determine how to update usher info with indel data
-
+4. Improved molecular clock calibration (rooting is so time-consuming!), narrowing down the search for best root usng sampling dates.
 
