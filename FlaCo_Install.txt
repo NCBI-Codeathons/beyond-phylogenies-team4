@@ -1,0 +1,105 @@
+######Pipeline dependencies & apps:#########
+
+# Important linux headers/deps (beware of defaults but they have given me no problem)
+# If different linux distro, the dependency names will change 
+# recommended to install all these in a separate folder
+
+mkdir apps && cd apps
+PATH=${PATH}:$(pwd)
+
+sudo yum install openssl-devel libxml2-devel libcurl-devel harfbuzz-devel fribidi-devel freetype-devel libpng-devel libtiff-devel libjpeg-turbo-devel
+
+#Get latest R from CRAN (don't trust default download, it may be <4.1.0)
+wget https://cran.r-project.org/src/base/R-4/R-4.2.1.tar.gz
+tar xfz R-4.2.1.tar.gz; cd R-4.2.1/; 
+sudo ./configure --with-readline=no --with-x=no
+sudo make
+
+## Install R dependencies which have given me trouble in-script
+sudo ./bin/R --slave -e 'install.packages(c("optparse","phytools","devtools","rlist", "tidyverse","BiocManager","ggplot2","ape","phangorn","shiny","dplyr","reshape2"),repos="https://cloud.r-project.org",dependecies=TRUE)'
+
+cd ..
+PATH=${PATH}:$(pwd)"/R-4.2.1/bin"
+
+#conda
+wget https://repo.anaconda.com/archive/Anaconda3-2022.05-Linux-x86_64.sh
+bash Anaconda3-2022.05-Linux-x86_64.sh
+anaconda=$(pwd)"/anaconda3/bin/conda"
+
+#python dependencies
+eval "$(${anaconda} shell.bash hook)"
+pip install biopython numpy
+conda deactivate
+
+#usher
+git clone https://github.com/yatisht/usher.git
+cd usher/
+eval "$(${anaconda} shell.bash hook)"
+conda create -n usher-env
+conda activate usher-env
+conda config --add channels defaults
+conda config --add channels bioconda
+conda config --add channels conda-forge
+conda install usher
+conda deactivate
+
+cd ..
+
+#pangolin
+eval "$(${anaconda} shell.bash hook)"
+git clone https://github.com/cov-lineages/pangolin.git
+cd pangolin/
+conda env create -f environment.yml
+conda activate pangolin
+pip install .
+conda deactivate
+
+cd ..
+
+
+#nextflow
+eval "$(${anaconda} shell.bash hook)"
+wget -qO- https://get.nextflow.io | bash
+conda deactivate
+
+#iqtree2:
+wget https://github.com/iqtree/iqtree2/releases/download/v2.1.2/iqtree-2.1.2-Linux.tar.gz
+tar xfz iqtree-2.1.2-Linux.tar.gz
+PATH=${PATH}:$(pwd)"/iqtree-2.1.2-Linux/bin"
+
+#MAFFT:
+wget https://mafft.cbrc.jp/alignment/software/mafft-7.490-gcc_fc6.x86_64.rpm
+sudo rpm -Uvh mafft-7.490-gcc_fc6.x86_64.rpm 
+
+#BLAST:
+wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.13.0+-x64-arm-linux.tar.gz
+tar xfz ncbi-blast-2.13.0+-x64-arm-linux.tar.gz 
+ncbi-blast-2.13.0+/
+PATH=$PATH:$(pwd)/ncbi-blast-2.13.0+/bin
+
+#FastTree
+wget http://www.microbesonline.org/fasttree/FastTree
+chmod a+x FastTree 
+
+#Minimap2
+git clone https://github.com/lh3/minimap2
+cd minimap2 && make
+cd ..
+PATH=${PATH}:$(pwd)"/minimap2"
+
+#ViralMSA
+wget "https://raw.githubusercontent.com/niemasd/ViralMSA/master/ViralMSA.py"
+chmod a+x ViralMSA.py
+
+#Flaco
+git clone https://github.com/salemilab/flaco.git;
+PATH="$PATH:$(pwd)/flaco/bin";
+
+#Extra script
+wget https://github.com/W-L/ProblematicSites_SARS-CoV2/blob/master/src/mask_alignment_using_vcf.py
+mv mask_alignment_using_vcf.py mask_aln_using_vcf.py 
+chmod a+x mask_aln_using_vcf.py
+
+# And the GitHub scripts!
+git clone https://github.com/NCBI-Codeathons/beyond-phylogenies-team4.git
+PATH="$PATH:$(pwd)/beyond-phylogenies-team4/bin"
