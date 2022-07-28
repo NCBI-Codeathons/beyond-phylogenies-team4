@@ -140,6 +140,7 @@
 	```
 	python3 mask_aln_using_vcf.py -i ${run}_florida_gisaid_${today}_aln/${run}_florida_gisaid_${today}.aln -o ${run}_florida_gisaid_${today}_masked.aln -v problematic_sites_sarsCov2.vcf
 	```
+	
 16. Merge metadata with pangolin file containing minimal information used for DYNAMITE/PHYLOPART (**May need to modify so that final column names are ID and DATE and first two columns**):
 	
 	```
