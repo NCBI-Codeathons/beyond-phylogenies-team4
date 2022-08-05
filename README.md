@@ -1,4 +1,4 @@
-# PhyloPRIME (Phylogeny-based Pipeline for RegIonal Molecular Epidemiology)
+# PhyloPRIME (Phylogeny-based Pipeline for RegIonal Molecular Epidemiology analysis)
 
 
 ## Table of Contents
